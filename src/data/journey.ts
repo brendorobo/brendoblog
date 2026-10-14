@@ -4,7 +4,10 @@ export const CURRENT_CERT = {
   name: 'GCFA',
   full: 'GIAC Certified Forensic Analyst',
   course: 'SANS FOR508: Advanced Incident Response, Threat Hunting & Digital Forensics',
-  target: 'TBD', // e.g. '2027-02'
+  target: 'December 2026',
+  // SANS live class (dates drive the countdown on the home page)
+  classStart: '2026-10-17',
+  classEnd: '2026-10-22',
 };
 
 // FOR508 sections. Add `progress: 0–100` to any of them when you want a bar to show;
@@ -19,7 +22,10 @@ export const DOMAINS: { id: string; name: string; notes: string; progress?: numb
 ];
 
 // Milestones shown as a vertical log on /journey. Newest first.
-export const MILESTONES = [
+// `upcoming: true` shows as an open dot until you flip it.
+export const MILESTONES: { date: string; title: string; detail: string; upcoming?: boolean }[] = [
+  { date: '2026-12', title: 'GCFA exam (goal)', detail: 'Target: sit the GIAC Certified Forensic Analyst exam in December.', upcoming: true },
+  { date: '2026-10-17', title: 'SANS FOR508 live class', detail: 'Six days of Advanced Incident Response, Threat Hunting & Digital Forensics, October 17–22.', upcoming: true },
   { date: '2026-10-14', title: 'Launched this site', detail: 'Started publishing write-ups on brendorobo.com.' },
   { date: '2026-09-29', title: 'B.S. Cybersecurity & Information Assurance', detail: 'Graduated from Western Governors University, earned while working full-time in the SOC.' },
   { date: '2026-09-21', title: 'First CTF: HTB Holmes 2026', detail: 'Team FirstEnergy TSOC placed 476th of 5,637 teams, solving 42/111 challenges for 3,925 points.' },

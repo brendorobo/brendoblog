@@ -50,6 +50,11 @@ const moodText = NOW.mood.text || lastLog?.note;
         {NOW.items.map((i) => (
           <div><dt class="mono">{i.k}</dt><dd>{i.v}</dd></div>
         ))}
+        <div class="cls" data-class-start={CURRENT_CERT.classStart} data-class-end={CURRENT_CERT.classEnd}>
+          <dt class="mono">sans class</dt>
+          <dd>FOR508 live, Oct 17–22 <span class="mono badge" data-class-status></span></dd>
+        </div>
+        <div><dt class="mono">exam goal</dt><dd>{CURRENT_CERT.name} in {CURRENT_CERT.target}</dd></div>
         {mood && (
           <div><dt class="mono">feeling</dt><dd><span class="mood">{mood.emoji} {mood.label}</span>{moodText && <span class="muted"> · {moodText}</span>}</dd></div>
         )}
@@ -87,6 +92,27 @@ const moodText = NOW.mood.text || lastLog?.note;
   </section>
 </Base>
 
+<script>
+  // Live countdown for the SANS class: before → "starts in N days", during → "day X of 6", after → "done ✓"
+  const el = document.querySelector<HTMLElement>('[data-class-start]');
+  const out = el?.querySelector<HTMLElement>('[data-class-status]');
+  if (el && out) {
+    const day = 864e5;
+    const start = new Date(el.dataset.classStart + 'T00:00:00');
+    const end = new Date(el.dataset.classEnd + 'T23:59:59');
+    const now = new Date();
+    const total = Math.round((end.getTime() - start.getTime()) / day);
+    if (now < start) {
+      const n = Math.ceil((start.getTime() - now.getTime()) / day);
+      out.textContent = n === 1 ? 'starts tomorrow' : `starts in ${n} days`;
+    } else if (now <= end) {
+      out.textContent = `in class · day ${Math.floor((now.getTime() - start.getTime()) / day) + 1} of ${total}`;
+    } else {
+      out.textContent = 'done ✓';
+    }
+  }
+</script>
+
 <style>
   .hero {
     display: grid; gap: 2.5rem; align-items: center;
@@ -119,6 +145,8 @@ const moodText = NOW.mood.text || lastLog?.note;
   .now dt { font-size: 0.78rem; color: var(--dim); }
   .now dd { margin: 0; font-size: 1.02rem; }
   .mood { color: var(--amber); }
+  .badge { font-size: 0.7rem; margin-left: 0.4rem; padding: 0.1rem 0.5rem; border-radius: 999px; color: var(--amber); border: 1px solid color-mix(in srgb, var(--amber) 45%, transparent); white-space: nowrap; }
+  .badge:empty { display: none; }
   .more { font-size: 0.78rem; justify-self: start; }
   @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
 </style>
