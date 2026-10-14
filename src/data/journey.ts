@@ -33,7 +33,7 @@ export const MILESTONES: { date: string; title: string; detail: string; upcoming
   { date: '2025-12-27', title: 'Passed the ISC2 SSCP', detail: 'Systems Security Certified Practitioner, earned as part of my WGU degree.' },
   { date: '2025-05', title: 'A.A.S. from Stark State College', detail: 'Computer Network Administration & Security Technology, completed through my IT apprenticeship.' },
   { date: '2024-08', title: 'Cybersecurity Analyst', detail: 'Moved into a full-time SOC role: incident response, digital forensics, threat hunting and detection content.' },
-  { date: '2023-01', title: 'Junior Systems & Network Administrator', detail: 'Started an IT apprenticeship while working on my associate degree.' },
+  { date: '2023-01', title: 'Information Technology Specialist', detail: 'Started an IT apprenticeship while working on my associate degree.' },
 ];
 
 // Certs. status: 'done' | 'in-progress' | 'planned'

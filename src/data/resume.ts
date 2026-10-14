@@ -23,7 +23,7 @@ export const EXPERIENCE = [
     ],
   },
   {
-    role: 'Junior Systems & Network Administrator',
+    role: 'Information Technology Specialist',
     org: 'Clampco Products',
     where: 'Wadsworth, OH',
     when: 'Jan 2023 – Aug 2024',
