@@ -1,0 +1,85 @@
+---
+title: 'I Plugged in a $20 Speaker and Wireshark Showed Me a Ghost Drive'
+description: 'A cheap USB speaker showed up as an empty drive. Here’s how Wireshark’s USB capture showed what was really going on.'
+date: 2026-10-14
+category: Investigation
+tags: [wireshark, usb, badusb, hardware]
+---
+import Callout from '../../components/mdx/Callout.astro';
+import Timeline from '../../components/mdx/Timeline.astro';
+import Figure from '../../components/mdx/Figure.astro';
+
+<Callout type="ioc" title="tl;dr">
+A cheap USB speaker showed up in Windows as an empty, zero-byte drive, which is the classic shape of a BadUSB
+attack. We captured its raw USB traffic in Wireshark (yes, Wireshark can sniff USB, not just network packets)
+and watched it claim to be storage, then answer "Medium Not Present" the moment the host asked for the disk.
+**Verdict:** not malicious, just lazy firmware reused from a product line that actually has storage.
+**Lesson:** read what a device *does*, not just what it *claims*.
+</Callout>
+
+We had a USB speaker hit the bench that did something odd: plug it in, and Windows showed a brand-new storage
+device with zero bytes and no media. In a SOC, that first thought is always BadUSB. A device pretending to be
+something it isn't is exactly what you don't ignore, so we pulled it apart.
+
+## You can actually sniff USB like it's network traffic
+
+Here's the thing that genuinely made our day: we didn't know Wireshark could do this. You think of Wireshark as
+a network tool: packets on a wire, IP addresses, ports. But it turns out there's a USB capture component built
+right in, and it lets you watch the raw conversation between the host and the device as it happens. Every
+descriptor exchange, every control transfer, every SCSI command and the status it gets back, all of it live in
+the same interface we use every day for network work.
+
+Once we realized that, the whole investigation changed. Instead of guessing what the device was doing from the
+outside, we could sit there and read it talking to the computer in real time. It felt a bit like getting X-ray
+vision for something we plug in a dozen times a day and never think about. That alone made the case worth it.
+
+<Callout type="tip" title="try it yourself">
+On Windows, Wireshark's USB capture comes from **USBPcap**, which the Wireshark installer offers as an optional
+component. Once it's installed, the USBPcap interfaces show up next to your network adapters.
+</Callout>
+
+{/* IMAGE: Wireshark USB capture overview screenshot
+<Figure src="/images/posts/ghost-drive/capture-overview.png" alt="Wireshark USB capture overview" caption="the USB conversation, live in Wireshark" /> */}
+
+## What the device claimed to be
+
+When a USB device connects, it introduces itself with a set of descriptors that basically say "here's what I am
+and what I can do." This little speaker declared two personalities: an audio interface, which you'd expect, and
+a mass-storage interface, which you wouldn't.
+
+{/* IMAGE: descriptor screenshot showing audio + mass storage interfaces
+<Figure src="/images/posts/ghost-drive/descriptors.png" alt="USB configuration descriptor showing an audio interface and a mass storage interface" caption="two personalities in one descriptor" /> */}
+
+## What it actually did
+
+That storage interface is what tripped the alarm. But when the host asked for the disk, the device answered
+with a SCSI status of "Medium Not Present," the same thing an empty card reader says when there's no card in
+the slot. It claimed to be storage, but nothing was behind it.
+
+{/* IMAGE: SCSI "Medium Not Present" response screenshot
+<Figure src="/images/posts/ghost-drive/medium-not-present.png" alt="SCSI sense data reporting Medium Not Present" caption="the ghost drive admits it's empty" /> */}
+
+Here's the general shape of that conversation, step by step. Click a row for what it means.
+
+<Timeline
+  title="simplified USB storage handshake (illustrative)"
+  events={[
+    { time: 'step 1', source: 'Enumeration', event: 'Host asks for the device descriptor', detail: 'The device introduces itself: vendor, product, and how many configurations it has.' },
+    { time: 'step 2', source: 'Enumeration', event: 'Configuration descriptor lists the interfaces', detail: 'This is where the speaker declared <strong>two</strong> interfaces: Audio (class 0x01) and Mass Storage (class 0x08).', flag: true },
+    { time: 'step 3', source: 'Enumeration', event: 'Host loads drivers for each interface', detail: 'Windows sees a mass-storage interface and creates a drive for it, which is why the empty "ghost drive" appears.' },
+    { time: 'step 4', source: 'SCSI', event: 'INQUIRY: "what kind of storage are you?"', detail: 'The device answers like a normal disk or card reader.' },
+    { time: 'step 5', source: 'SCSI', event: 'TEST UNIT READY: "is there media?"', detail: 'The device fails the check with a CHECK CONDITION status.' },
+    { time: 'step 6', source: 'SCSI', event: 'REQUEST SENSE: Medium Not Present', detail: 'Sense key NOT READY with "medium not present". Same answer as an empty card reader: storage interface, nothing behind it.', flag: true },
+  ]}
+/>
+
+## Why it happened
+
+Our read: the speaker runs on a cheap, general-purpose chip reused across a whole family of products, including
+MP3 players that genuinely have onboard storage. This soundbar inherited the firmware's storage interface without
+the hardware to back it up, a leftover declaration nobody trimmed out. Lazy firmware, not a payload.
+
+## The takeaway
+
+An empty drive looks scary, but the descriptors and SCSI responses tell the real story. Watch what a device
+claims to be, then watch what it does when you ask it to prove it.

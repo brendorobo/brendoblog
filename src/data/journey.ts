@@ -24,6 +24,7 @@ export const DOMAINS: { id: string; name: string; notes: string; progress?: numb
 // Milestones shown as a vertical log on /journey. Newest first.
 // `upcoming: true` shows as an open dot until you flip it.
 export const MILESTONES: { date: string; title: string; detail: string; upcoming?: boolean }[] = [
+  { date: '2027 spring', title: 'Start my Master’s', detail: 'The next chapter after the B.S.', upcoming: true },
   { date: '2026-12', title: 'GCFA exam (goal)', detail: 'Target: sit the GIAC Certified Forensic Analyst exam in December.', upcoming: true },
   { date: '2026-10-17', title: 'SANS FOR508 live class', detail: 'Six days of Advanced Incident Response, Threat Hunting & Digital Forensics, October 17–22.', upcoming: true },
   { date: '2026-10-14', title: 'Launched this site', detail: 'Started publishing write-ups on brendorobo.com.' },

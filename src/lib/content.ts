@@ -2,7 +2,8 @@ import { getCollection } from 'astro:content';
 
 export async function getPosts() {
   const posts = await getCollection('posts', ({ data }) => import.meta.env.DEV || !data.draft);
-  return posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+  // newest first; on the same day, meta posts (like the welcome post) go last
+  return posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf() || Number(a.data.category === 'Meta') - Number(b.data.category === 'Meta'));
 }
 
 export async function getLinkedIn() {
