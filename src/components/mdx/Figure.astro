@@ -29,7 +29,7 @@ const { src, alt, caption, wide = false } = Astro.props;
 
 <style>
   .fig { margin: 1.8rem 0; }
-  .fig.wide { margin-left: clamp(-8rem, -8vw, 0rem); margin-right: clamp(-8rem, -8vw, 0rem); }
+  @media (min-width: 900px) { .fig.wide { margin-left: clamp(-8rem, -8vw, 0rem); margin-right: clamp(-8rem, -8vw, 0rem); } }
   .zoom { all: unset; cursor: zoom-in; display: block; }
   .zoom:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: var(--radius); }
   img { display: block; width: 100%; border-radius: var(--radius); border: 1px solid var(--line); }

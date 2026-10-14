@@ -1,6 +1,6 @@
 ---
 title: 'I Plugged in a $20 Speaker and Wireshark Showed Me a Ghost Drive'
-description: 'A cheap USB speaker showed up as an empty drive. Here’s how Wireshark’s USB capture showed what was really going on.'
+description: 'A cheap USB speaker showed up as an empty drive. Here’s how Wireshark’s USB capture, a few tests, and a screwdriver showed what was really going on.'
 date: 2026-10-14
 category: Investigation
 tags: [wireshark, usb, badusb, hardware]
@@ -21,6 +21,10 @@ We had a USB speaker hit the bench that did something odd: plug it in, and Windo
 device with zero bytes and no media. In a SOC, that first thought is always BadUSB. A device pretending to be
 something it isn't is exactly what you don't ignore, so we pulled it apart.
 
+Here's the whole investigation at a glance before we get into it.
+
+<Figure src="/images/posts/ghost-drive/investigation-flow.svg" alt="Five steps: spot the 0-byte drive, identify the device, capture USB traffic, test it, open it up" caption="the investigation, start to finish" />
+
 ## You can actually sniff USB like it's network traffic
 
 Here's the thing that genuinely made our day: we didn't know Wireshark could do this. You think of Wireshark as
@@ -39,17 +43,32 @@ Wireshark installer offers as an optional component (or grab it from the GitHub 
 USBPcap interfaces show up next to your network adapters.
 </Callout>
 
-{/* IMAGE: Wireshark USB capture overview screenshot
-<Figure src="/images/posts/ghost-drive/capture-overview.png" alt="Wireshark USB capture overview" caption="the USB conversation, live in Wireshark" /> */}
+<Figure src="/images/posts/ghost-drive/usbpcap-installer.jpg" alt="Wireshark 4.6.9 installer page offering to install USBPcap 1.5.4.0" caption="the Wireshark installer's USB Capture page: tick the box" />
+
+<Callout type="warn" title="gotcha">
+USBPcap is a **driver**, not just a program. Copying its files into Wireshark's `extcap` folder by hand won't
+make the interfaces appear. Install it properly and **reboot**. After that, each USB controller shows up as its
+own `USBPcap1`, `USBPcap2`, … interface. Also start your capture **before** you plug the device in, or you'll miss
+the introductions (descriptors) it sends when it first connects.
+</Callout>
 
 ## What the device claimed to be
 
 When a USB device connects, it introduces itself with a set of descriptors that basically say "here's what I am
-and what I can do." This little speaker declared two personalities: an audio interface, which you'd expect, and
-a mass-storage interface, which you wouldn't.
+and what I can do." This little speaker declared three personalities: an audio interface, which you'd expect, a
+media-key input device, which is common on speakers, and a mass-storage interface, which you wouldn't.
 
-{/* IMAGE: descriptor screenshot showing audio + mass storage interfaces
-<Figure src="/images/posts/ghost-drive/descriptors.png" alt="USB configuration descriptor showing an audio interface and a mass storage interface" caption="two personalities in one descriptor" /> */}
+<Figure src="/images/posts/ghost-drive/descriptors.jpg" alt="Wireshark configuration descriptor showing Mass Storage, two Audio interfaces, and HID" caption="the configuration descriptor: storage, audio, audio, HID. nothing else" />
+
+That's the full list, and it's just as useful for what's missing. No vendor-specific channel, no
+firmware-update interface, no network or wireless interface. Whatever this thing was, it couldn't phone home.
+
+| # | Interface | What it does |
+| --- | --- | --- |
+| 0 | Mass Storage (`0x08`) | The "ghost drive" |
+| 1 | Audio Control (`0x01`) | Volume and mute |
+| 2 | Audio Streaming (`0x01`) | Plays sound from the PC (16-bit stereo, 48 kHz) |
+| 3 | HID (`0x03`) | Media keys |
 
 ## What it actually did
 
@@ -57,8 +76,9 @@ That storage interface is what tripped the alarm. But when the host asked for th
 with a SCSI status of "Medium Not Present," the same thing an empty card reader says when there's no card in
 the slot. It claimed to be storage, but nothing was behind it.
 
-{/* IMAGE: SCSI "Medium Not Present" response screenshot
-<Figure src="/images/posts/ghost-drive/medium-not-present.png" alt="SCSI sense data reporting Medium Not Present" caption="the ghost drive admits it's empty" /> */}
+<Figure src="/images/posts/ghost-drive/storage-loop.svg" alt="Sequence diagram: Windows sends Test Unit Ready, gets Check Condition, sends Request Sense, gets Medium Not Present, repeating every second" caption="the same four-step conversation, once a second, forever" />
+
+<Figure src="/images/posts/ghost-drive/medium-not-present.jpg" alt="Wireshark packet list showing repeating Test Unit Ready and Request Sense packets" caption="the ghost drive admits it's empty" />
 
 Here's the general shape of that conversation, step by step. Click a row for what it means.
 
@@ -66,13 +86,48 @@ Here's the general shape of that conversation, step by step. Click a row for wha
   title="simplified USB storage handshake (illustrative)"
   events={[
     { time: 'step 1', source: 'Enumeration', event: 'Host asks for the device descriptor', detail: 'The device introduces itself: vendor, product, and how many configurations it has.' },
-    { time: 'step 2', source: 'Enumeration', event: 'Configuration descriptor lists the interfaces', detail: 'This is where the speaker declared <strong>two</strong> interfaces: Audio (class 0x01) and Mass Storage (class 0x08).', flag: true },
+    { time: 'step 2', source: 'Enumeration', event: 'Configuration descriptor lists the interfaces', detail: 'This is where the speaker declared its interfaces, including Audio (class 0x01) and <strong>Mass Storage (class 0x08)</strong>.', flag: true },
     { time: 'step 3', source: 'Enumeration', event: 'Host loads drivers for each interface', detail: 'Windows sees a mass-storage interface and creates a drive for it, which is why the empty "ghost drive" appears.' },
     { time: 'step 4', source: 'SCSI', event: 'INQUIRY: "what kind of storage are you?"', detail: 'The device answers like a normal disk or card reader.' },
     { time: 'step 5', source: 'SCSI', event: 'TEST UNIT READY: "is there media?"', detail: 'The device fails the check with a CHECK CONDITION status.' },
-    { time: 'step 6', source: 'SCSI', event: 'REQUEST SENSE: Medium Not Present', detail: 'Sense key NOT READY with "medium not present". Same answer as an empty card reader: storage interface, nothing behind it.', flag: true },
+    { time: 'step 6', source: 'SCSI', event: 'REQUEST SENSE: Medium Not Present', detail: 'Sense key NOT READY with "medium not present" (3A/00). Same answer as an empty card reader: storage interface, nothing behind it.', flag: true },
   ]}
 />
+
+Then we tried to break it. We dragged a file onto the drive. Windows started the copy and sat at 0%. In
+Wireshark, not a single READ or WRITE command ever went to the device. Windows never even tried, because the
+drive kept saying there was nothing there. You can't write to a disk that doesn't exist.
+
+## Could it type commands?
+
+The scarier BadUSB trick isn't storage at all. It's a device that quietly pretends to be a **keyboard** and types
+commands faster than you can blink. This speaker did declare an input device, so we pulled its HID report
+descriptor, which is the device's exact list of "keys" it's allowed to send.
+
+<Figure src="/images/posts/ghost-drive/keyboard-vs-media-keys.svg" alt="Comparison: a BadUSB keyboard uses usage page 0x07 and can type commands; this speaker uses usage page 0x0C and can only send media keys" caption="keyboard vs. media keys: the descriptor tells you which one you've got" />
+
+It came back as 51 bytes of media controls and nothing else: volume, mute, play/pause, next and previous track.
+Usage Page `0x0C` (Consumer), not `0x07` (Keyboard). No letters, no shortcuts, and no way for the PC to send it
+data back.
+
+<Figure src="/images/posts/ghost-drive/hid-decode.jpg" alt="Byte-by-byte decode of the speaker's HID report descriptor, showing only consumer media keys" caption="the descriptor, decoded byte by byte" />
+
+The funny part: the speaker has **no buttons**. It advertises sixteen media keys it physically can't press. That
+turned out to be a big clue.
+
+To be sure, we left it plugged in and untouched for ten minutes with a capture running. Zero bytes of key data.
+
+## Opening it up
+
+Software can only tell you so much, so out came the screwdriver. The whole board is one chip, two small audio
+amplifiers, and some supporting parts. No card slot, no extra memory chip, no second processor, no radio.
+
+<Figure src="/images/posts/ghost-drive/board-annotated.jpg" alt="Annotated circuit board showing the Jieli chip, two amplifiers, and empty pads" caption="the entire speaker. note the empty pads: one board design, many products" wide />
+
+The chip has a "JL" logo, which is **Zhuhai Jieli Technology**, a Chinese company that makes cheap audio chips
+for tons of unbranded speakers and headsets. Its date code and the date printed on the board both say 2020.
+
+<Figure src="/images/posts/ghost-drive/chip-annotated.jpg" alt="Close-up of the Jieli chip with the logo and marking explained" caption="reading the chip: maker logo, year, batch" />
 
 ## Why it happened
 
@@ -80,7 +135,43 @@ Our read: the speaker runs on a cheap, general-purpose chip reused across a whol
 MP3 players that genuinely have onboard storage. This soundbar inherited the firmware's storage interface without
 the hardware to back it up, a leftover declaration nobody trimmed out. Lazy firmware, not a payload.
 
+<Figure src="/images/posts/ghost-drive/same-chip-family.svg" alt="Diagram: the same chip in an MP3 player has audio, buttons, and a card slot; in this soundbar only audio is wired up, so the storage and buttons are declared but missing" caption="same chip, same firmware, different hardware" />
+
+The evidence lines up. The same vendor ID lists a sibling product that's literally an "MP3 Player." The board has
+no slot. The drive always reports no media. And the media keys with no buttons are the exact same pattern:
+template features with no hardware behind them.
+
+## What we checked
+
+| Concern | Result |
+| --- | --- |
+| Types commands like a keyboard (BadUSB) | **No.** Media keys only |
+| Hidden storage | **No.** No slot, no memory chip, always "no media" |
+| Reads or writes data | **No.** Zero READ/WRITE commands |
+| Network or wireless | **No.** No interface, no radio |
+| Firmware-update channel | **No.** Not declared |
+| Does anything on its own | **No.** Silent for 10 minutes |
+
+## Wireshark filters we used
+
+If you want to try this on your own sketchy USB gadget, these are the filters that did the work:
+
+```text
+usb.idVendor == 0xe2b7                       # find the device (use your device's vendor ID)
+usb.device_address == 21 && usb.bDescriptorType == 0x02   # full interface list
+usbms || scsi                                # storage traffic only
+scsi.sbc.opcode == 0x2a || scsi.sbc.opcode == 0x2b        # any write attempts?
+_ws.col.info contains "HID Report"           # what the input device can do
+usb.device_address == 21 && usb.transfer_type == 0x01 && usb.data_len > 0   # did it send anything on its own?
+```
+
+<Callout type="note" title="heads up">
+The device address changes every time you replug. Find the current one with the vendor-ID filter first, then
+swap it into the others.
+</Callout>
+
 ## The takeaway
 
 An empty drive looks scary, but the descriptors and SCSI responses tell the real story. Watch what a device
-claims to be, then watch what it does when you ask it to prove it.
+claims to be, then watch what it does when you ask it to prove it. And when software can't settle it, open the
+case. Sometimes a ghost drive is just a $20 speaker wearing a hand-me-down firmware costume.
