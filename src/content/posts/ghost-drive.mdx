@@ -160,7 +160,7 @@ If you want to try this on your own sketchy USB gadget, these are the filters th
 usb.idVendor == 0xe2b7                       # find the device (use your device's vendor ID)
 usb.device_address == 21 && usb.bDescriptorType == 0x02   # full interface list
 usbms || scsi                                # storage traffic only
-scsi.sbc.opcode == 0x2a || scsi.sbc.opcode == 0x2b        # any write attempts?
+scsi.sbc.opcode in {0x0a 0x2a 0xaa 0x8a}   # any write attempts? WRITE(6), (10), (12), (16)
 _ws.col.info contains "HID Report"           # what the input device can do
 usb.device_address == 21 && usb.transfer_type == 0x01 && usb.data_len > 0   # did it send anything on its own?
 ```
