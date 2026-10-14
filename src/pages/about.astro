@@ -45,7 +45,7 @@ const earned = CERTS.filter((c) => c.status === 'done');
         </p>
         <p>
           That’s why I’m going deeper into <strong>DFIR</strong> and working toward the <strong>GCFA</strong>{' '}
-          (SANS FOR508). This site is my public notebook for that: study notes, homelab investigations, tools I’m
+          (SANS FOR508). This blog is where I write that up: study notes, CTF write-ups, tools I’m
           testing, and the “oh, <em>that’s</em> how it works” moments.
         </p>
         <p>
@@ -74,6 +74,10 @@ const earned = CERTS.filter((c) => c.status === 'done');
       </div>
 
       <aside class="card idcard mono">
+        <figure class="mug">
+          <img src={SITE.photo} alt="Brendon Roberts" width="1000" height="1000" />
+          <figcaption><span>exhibit A</span><span>analyst_photo.webp</span></figcaption>
+        </figure>
         <div class="row"><span>name</span><span>Brendon Roberts</span></div>
         <div class="row"><span>handle</span><span>brendorobo</span></div>
         <div class="row"><span>role</span><span>Cybersecurity Analyst</span></div>
@@ -101,6 +105,18 @@ const earned = CERTS.filter((c) => c.status === 'done');
   .grid { display: grid; gap: 2.5rem; }
   @media (min-width: 900px) { .grid { grid-template-columns: 1fr 320px; align-items: start; } }
   .idcard { padding: 1.2rem 1.3rem; font-size: 0.82rem; position: sticky; top: 90px; }
+  .mug { position: relative; margin: 0 0 1rem; border-radius: 8px; overflow: hidden; border: 1px solid var(--line-2); }
+  .mug img { display: block; width: 100%; height: auto; aspect-ratio: 1; object-fit: cover; }
+  .mug::after {
+    content: ''; position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(to bottom, transparent 0 3px, rgba(0, 0, 0, 0.08) 3px 4px),
+      linear-gradient(to top, color-mix(in srgb, var(--bg) 70%, transparent), transparent 40%);
+  }
+  .mug figcaption {
+    position: absolute; left: 0.6rem; right: 0.6rem; bottom: 0.45rem; z-index: 1;
+    display: flex; justify-content: space-between; font-size: 0.66rem; color: var(--accent);
+  }
+  @media (max-width: 899px) { .idcard { position: static; } .mug { max-width: 320px; } }
   .row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px dashed var(--line); }
   .row span:first-child { color: var(--dim); }
   .row span:last-child { text-align: right; }

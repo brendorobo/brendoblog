@@ -11,7 +11,7 @@ const { title, description = SITE.description, image } = Astro.props;
 const fullTitle = title ? `${title} · ${SITE.name}` : SITE.title;
 const path = Astro.url.pathname;
 const canonical = new URL(path, Astro.site);
-const ogImage = image ? new URL(image, Astro.site) : undefined;
+const ogImage = new URL(image ?? SITE.photo, Astro.site);
 ---
 <!doctype html>
 <html lang="en" data-theme={THEME}>
@@ -28,7 +28,7 @@ const ogImage = image ? new URL(image, Astro.site) : undefined;
     <meta property="og:description" content={description} />
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
-    {ogImage && <meta property="og:image" content={ogImage} />}
+    <meta property="og:image" content={ogImage} />
     <meta name="theme-color" content={THEME === 'phosphor' ? '#070b0a' : '#07081a'} />
     <script is:inline>
       try { const t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch {}

@@ -24,6 +24,7 @@ date: ${date}
 kind: post # milestone | cert | ctf | post
 url: # paste the LinkedIn post link here
 # image: /images/linkedin/${slug}.png
+# imageSize: [1280, 720] # width, height of the image
 stats: []
 #  - { label: rank, value: '1st' }
 tags: []

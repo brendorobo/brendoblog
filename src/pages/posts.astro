@@ -34,6 +34,15 @@ const kinds = [...new Set(items.map((i) => i.data.kind))];
     btns.forEach((x) => x.classList.toggle('on', x === b));
     cards.forEach((c) => (c.hidden = !(b.dataset.k === '*' || c.dataset.kind === b.dataset.k)));
   }));
+
+  // Land on the linked post (e.g. /posts/#holmes-ctf-2026) once images have laid out.
+  const target = location.hash && document.getElementById(decodeURIComponent(location.hash.slice(1)));
+  if (target) {
+    const go = () => target.scrollIntoView({ behavior: 'instant', block: 'start' });
+    if (document.readyState === 'complete') go();
+    else addEventListener('load', go, { once: true });
+    target.classList.add('in');
+  }
 </script>
 
 <style>

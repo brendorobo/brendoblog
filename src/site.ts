@@ -8,6 +8,8 @@ export const SITE = {
   github: 'https://github.com/brendorobo',
   linkedin: 'https://www.linkedin.com/in/brendon-roberts2023',
   email: '', // optional public contact address
+  photo: '/images/brendon.webp',
+  avatar: '/images/brendon-160.webp',
 };
 
 // Color theme: 'nebula' (blue/purple) or 'phosphor' (original terminal green).

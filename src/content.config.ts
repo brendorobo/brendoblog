@@ -28,6 +28,7 @@ const linkedin = defineCollection({
     url: z.string().url().optional(), // link to the LinkedIn post
     image: z.string().optional(), // e.g. /images/linkedin/holmes-ctf.png
     imageAlt: z.string().optional(),
+    imageSize: z.tuple([z.number(), z.number()]).optional(), // [width, height] in px
     stats: z.array(z.object({ label: z.string(), value: z.string() })).default([]),
     tags: z.array(z.string()).default([]),
   }),

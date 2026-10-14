@@ -13,7 +13,7 @@ const link = d.url ?? `${SITE.linkedin}/recent-activity/all/`;
 ---
 <article class:list={['li card reveal', d.kind, { compact }]} id={item.id} data-kind={d.kind}>
   <header class="li-head">
-    <span class="avatar mono" aria-hidden="true">BR</span>
+    <img class="avatar" src={SITE.avatar} alt="" width="38" height="38" />
     <div class="who">
       <strong>{SITE.author}</strong>
       <span class="mono sub"><time datetime={iso}>{iso}</time> · via linkedin</span>
@@ -27,7 +27,11 @@ const link = d.url ?? `${SITE.linkedin}/recent-activity/all/`;
       {d.stats.map((s) => <div><dt>{s.label}</dt><dd>{s.value}</dd></div>)}
     </dl>
   )}
-  {!compact && d.image && <img class="shot" src={d.image} alt={d.imageAlt ?? d.title} loading="lazy" />}
+  {!compact && d.image && (
+    <a class="shot-link" href={d.image} target="_blank" rel="noopener" title="open full size">
+      <img class="shot" src={d.image} alt={d.imageAlt ?? d.title} loading="lazy" width={d.imageSize?.[0]} height={d.imageSize?.[1]} />
+    </a>
+  )}
   <footer class="mono">
     {!compact && d.tags.length > 0 && <span class="tags">{d.tags.map((t) => `#${t}`).join(' ')}</span>}
     {compact ? <a href={`/posts/#${item.id}`}>read →</a> : <a href={link} rel="noopener" target="_blank">view on linkedin ↗</a>}
@@ -41,9 +45,8 @@ const link = d.url ?? `${SITE.linkedin}/recent-activity/all/`;
   .li.milestone { --k: var(--amber); }
   .li-head { display: flex; align-items: center; gap: 0.75rem; }
   .avatar {
-    width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; flex: none;
-    font-size: 0.78rem; font-weight: 700; color: #fff;
-    background: linear-gradient(135deg, var(--accent-dim), var(--accent-2));
+    width: 38px; height: 38px; border-radius: 50%; flex: none; object-fit: cover;
+    border: 2px solid var(--accent-dim);
   }
   .who { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
   .who strong { font-size: 0.92rem; }
@@ -59,7 +62,9 @@ const link = d.url ?? `${SITE.linkedin}/recent-activity/all/`;
   .stats div { background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; padding: 0.55rem 0.7rem; }
   .stats dt { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); }
   .stats dd { margin: 0.15rem 0 0; font-size: 0.86rem; color: var(--text); font-weight: 700; }
-  .shot { width: 100%; border-radius: 8px; border: 1px solid var(--line); margin: 0.4rem 0 0.8rem; }
+  .shot-link { display: block; cursor: zoom-in; }
+  .shot { display: block; width: 100%; height: auto; border-radius: 8px; border: 1px solid var(--line); margin: 0.4rem 0 0.8rem; transition: border-color 0.2s; }
+  .shot-link:hover .shot { border-color: var(--accent-dim); }
   footer { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; font-size: 0.75rem; margin-top: 0.4rem; }
   .tags { color: var(--accent); opacity: 0.85; }
   footer a { margin-left: auto; }

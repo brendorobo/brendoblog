@@ -51,7 +51,8 @@
 }
 
 * { box-sizing: border-box; }
-html { scroll-behavior: smooth; }
+/* smooth for in-page clicks (TOC), instant when landing on a page with a #hash */
+html:focus-within { scroll-behavior: smooth; }
 body {
   margin: 0;
   background: var(--bg);
