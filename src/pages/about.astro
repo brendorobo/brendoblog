@@ -1,39 +1,89 @@
 ---
 import Base from '../layouts/Base.astro';
 import { SITE } from '../site';
+import { CERTS } from '../data/journey';
+
+const EXPERIENCE = [
+  {
+    role: 'Cyber Security Analyst',
+    org: 'FirstEnergy',
+    when: 'Aug 2024 – present',
+    points: [
+      'Triage and investigate security alerts across the security tool stack',
+      'Investigate phishing, malware and suspicious endpoint activity',
+      'Support incident response efforts and forensics',
+      'Use SOAR automation to manage and respond to cases',
+      'Document investigations and collaborate on threat intelligence',
+    ],
+  },
+  {
+    role: 'Information Technology Specialist',
+    org: 'Clampco Products',
+    when: 'Jan 2023 – Aug 2024',
+    points: ['IT apprenticeship alongside college', 'Day-to-day support and maintenance of systems'],
+  },
+  {
+    role: 'Seasonal Sales Associate',
+    org: 'Best Buy',
+    when: 'Nov 2022 – Jan 2023',
+    points: ['Helped customers pick networking gear and solved their tech problems'],
+  },
+];
+const earned = CERTS.filter((c) => c.status === 'done');
 ---
-<Base title="whoami" description="About Brendon.">
+<Base title="whoami" description="Brendon Roberts: cybersecurity analyst focused on SOC operations and DFIR.">
   <section class="wrap about">
     <div class="eyebrow">// $ whoami</div>
-    <h1>Brendon <span class="mono handle">aka brendorobo</span></h1>
+    <h1>Brendon Roberts <span class="mono handle">aka brendorobo</span></h1>
 
     <div class="grid">
       <div class="prose">
-        <!-- EDIT ME: replace with your own story -->
         <p>
-          I work in cybersecurity and spend my off-hours going deeper into <strong>digital forensics and incident response</strong>.
-          Right now that means working through SANS FOR508 material toward the GCFA, building practice cases in my homelab,
-          and writing up what I learn so it sticks.
+          I’m a <strong>cybersecurity analyst</strong> working in SOC operations and incident response. Day to day
+          that means triaging alerts, digging into phishing, malware and suspicious endpoint activity, and writing up
+          what I find. The part I enjoy most is the forensics: figuring out what <em>actually</em> happened on a machine.
         </p>
         <p>
-          This site is my public notebook. It’s not a polished report library. It’s the messy middle: the artifacts that
-          confused me, the tools I tested, the labs that broke, and the “oh, <em>that’s</em> how it works” moments.
+          That’s why I’m going deeper into <strong>DFIR</strong> and working toward the <strong>GCFA</strong>{' '}
+          (SANS FOR508). This site is my public notebook for that: study notes, homelab investigations, tools I’m
+          testing, and the “oh, <em>that’s</em> how it works” moments.
         </p>
-        <h2>What you’ll find here</h2>
-        <ul>
-          <li><strong>Study notes</strong>: GCFA domains broken down into things I can actually explain.</li>
-          <li><strong>Labs</strong>: homelab builds, practice investigations, tooling experiments.</li>
-          <li><strong>Field notes</strong>: lessons from day-to-day security work (sanitized, always).</li>
-        </ul>
-        <p class="muted small">Opinions are my own. Nothing here is from a real client case.</p>
+        <p>
+          I hold a B.S. in Cybersecurity &amp; Information Assurance. I’m also an Eagle Scout, which taught me
+          discipline, integrity and accountability. Those carry straight into how I approach an investigation:
+          document everything and follow the evidence.
+        </p>
+
+        <h2>Experience</h2>
+        <ol class="xp">
+          {EXPERIENCE.map((x) => (
+            <li class="reveal">
+              <div class="xp-head">
+                <strong>{x.role}</strong> <span class="muted">· {x.org}</span>
+                <span class="mono when">{x.when}</span>
+              </div>
+              <ul>{x.points.map((p) => <li>{p}</li>)}</ul>
+            </li>
+          ))}
+        </ol>
+
+        <p class="muted small">
+          Opinions are my own and don’t represent my employer. Nothing here comes from real work cases; all
+          examples are from my own lab or public material.
+        </p>
       </div>
 
       <aside class="card idcard mono">
+        <div class="row"><span>name</span><span>Brendon Roberts</span></div>
         <div class="row"><span>handle</span><span>brendorobo</span></div>
-        <div class="row"><span>focus</span><span>DFIR · threat hunting</span></div>
+        <div class="row"><span>role</span><span>Cybersecurity Analyst</span></div>
+        <div class="row"><span>focus</span><span>SOC · DFIR</span></div>
+        <div class="row"><span>degree</span><span>B.S. Cybersecurity &amp; IA</span></div>
         <div class="row"><span>studying</span><span class="y">GCFA (FOR508)</span></div>
-        <div class="row"><span>os</span><span>SIFT · Windows · Linux</span></div>
         <div class="row"><span>status</span><span class="g">● learning</span></div>
+        <div class="certs">
+          {earned.map((c) => <span class="cert">{c.name}</span>)}
+        </div>
         <div class="links">
           <a class="btn" href={SITE.github}>github</a>
           {SITE.linkedin && <a class="btn" href={SITE.linkedin}>linkedin</a>}
@@ -53,7 +103,21 @@ import { SITE } from '../site';
   .idcard { padding: 1.2rem 1.3rem; font-size: 0.82rem; position: sticky; top: 90px; }
   .row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px dashed var(--line); }
   .row span:first-child { color: var(--dim); }
+  .row span:last-child { text-align: right; }
   .y { color: var(--amber); } .g { color: var(--accent); }
+  .certs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1rem; }
+  .cert { font-size: 0.75rem; padding: 0.15rem 0.55rem; border: 1px solid var(--accent-dim); color: var(--accent); border-radius: 5px; }
   .links { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1.2rem; }
   .small { font-size: 0.85rem; }
+  .xp { list-style: none; padding: 0 0 0 1.2rem; margin: 1rem 0 2rem; border-left: 1px dashed var(--line-2); }
+  .xp > li { position: relative; padding: 0 0 1.4rem 0.4rem; }
+  .xp > li::before {
+    content: ''; position: absolute; left: calc(-1.2rem - 5px); top: 0.55rem;
+    width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent);
+  }
+  .xp > li:not(:first-child)::before { background: var(--line-2); box-shadow: none; }
+  .xp-head { display: flex; flex-wrap: wrap; gap: 0.3rem 0.5rem; align-items: baseline; }
+  .when { font-size: 0.75rem; color: var(--dim); margin-left: auto; }
+  .xp ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+  .xp ul li { font-size: 0.95rem; margin: 0.15rem 0; }
 </style>

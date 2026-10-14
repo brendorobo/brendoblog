@@ -1,7 +1,7 @@
 // One place to edit your personal details.
 export const SITE = {
   name: 'brendorobo',
-  author: 'Brendon',
+  author: 'Brendon Roberts',
   title: 'brendorobo // DFIR notebook',
   description:
     'Brendon’s lab notebook: DFIR, GCFA prep, homelab experiments and the things I learn along the way.',

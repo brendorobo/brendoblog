@@ -58,8 +58,9 @@ const { items } = Astro.props;
         ].forEach(([c, d]) => line(`  <span class="g">${c.padEnd(30, ' ')}</span><span class="m">${d}</span>`));
       },
       whoami() {
-        line(`<span class="g">brendon</span> · security practitioner · DFIR student · homelab tinkerer`);
-        line(`<span class="m">groups: blue-team, sans-gcfa-prep, coffee</span>`);
+        line(`<span class="g">brendon roberts</span> · cybersecurity analyst · SOC + DFIR`);
+        line(`<span class="m">certs: Security+, CySA+, PenTest+, SSCP · studying: GCFA</span>`);
+        line(`<span class="m">groups: blue-team, eagle-scouts, sans-gcfa-prep</span>`);
       },
       ls(args) {
         const f = args[0];

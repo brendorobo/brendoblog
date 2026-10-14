@@ -20,14 +20,17 @@ export const DOMAINS = [
 // Milestones shown as a vertical log on /journey. Newest first.
 export const MILESTONES = [
   { date: '2026-10-14', title: 'Launched this site', detail: 'Notebook goes public — every lab and study session gets written up here.' },
-  { date: '2026-10-01', title: 'Started GCFA prep', detail: 'Mapped out the FOR508 domains and built a study plan.' },
+  { date: '2024-08', title: 'Cyber Security Analyst', detail: 'Moved into a full-time SOC role: alert triage, phishing and malware investigations, IR and forensics.' },
+  { date: '2023-01', title: 'IT apprenticeship', detail: 'Started in IT as an apprentice while finishing my B.S. in Cybersecurity & Information Assurance.' },
 ];
 
-// Certs & training (done or planned).
+// Certs & training. status: 'done' | 'in-progress' | 'planned'
 export const CERTS = [
   { name: 'GCFA', status: 'in-progress' },
-  { name: 'GCIH', status: 'planned' },
-  { name: 'GREM', status: 'planned' },
+  { name: 'SSCP', status: 'done' },
+  { name: 'CySA+', status: 'done' },
+  { name: 'PenTest+', status: 'done' },
+  { name: 'Security+', status: 'done' },
 ] as const;
 
 // Toolbox — things you've used hands-on.
