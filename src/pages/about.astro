@@ -1,0 +1,59 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE } from '../site';
+---
+<Base title="whoami" description="About Brendon.">
+  <section class="wrap about">
+    <div class="eyebrow">// $ whoami</div>
+    <h1>Brendon <span class="mono handle">aka brendorobo</span></h1>
+
+    <div class="grid">
+      <div class="prose">
+        <!-- EDIT ME: replace with your own story -->
+        <p>
+          I work in cybersecurity and spend my off-hours going deeper into <strong>digital forensics and incident response</strong>.
+          Right now that means working through SANS FOR508 material toward the GCFA, building practice cases in my homelab,
+          and writing up what I learn so it sticks.
+        </p>
+        <p>
+          This site is my public notebook. It’s not a polished report library. It’s the messy middle: the artifacts that
+          confused me, the tools I tested, the labs that broke, and the “oh, <em>that’s</em> how it works” moments.
+        </p>
+        <h2>What you’ll find here</h2>
+        <ul>
+          <li><strong>Study notes</strong>: GCFA domains broken down into things I can actually explain.</li>
+          <li><strong>Labs</strong>: homelab builds, practice investigations, tooling experiments.</li>
+          <li><strong>Field notes</strong>: lessons from day-to-day security work (sanitized, always).</li>
+        </ul>
+        <p class="muted small">Opinions are my own. Nothing here is from a real client case.</p>
+      </div>
+
+      <aside class="card idcard mono">
+        <div class="row"><span>handle</span><span>brendorobo</span></div>
+        <div class="row"><span>focus</span><span>DFIR · threat hunting</span></div>
+        <div class="row"><span>studying</span><span class="y">GCFA (FOR508)</span></div>
+        <div class="row"><span>os</span><span>SIFT · Windows · Linux</span></div>
+        <div class="row"><span>status</span><span class="g">● learning</span></div>
+        <div class="links">
+          <a class="btn" href={SITE.github}>github</a>
+          {SITE.linkedin && <a class="btn" href={SITE.linkedin}>linkedin</a>}
+          {SITE.email && <a class="btn" href={`mailto:${SITE.email}`}>email</a>}
+        </div>
+      </aside>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .about { padding-top: 3rem; }
+  h1 { margin: 0.6rem 0 2rem; }
+  .handle { font-size: 0.45em; color: var(--muted); font-weight: 400; vertical-align: middle; }
+  .grid { display: grid; gap: 2.5rem; }
+  @media (min-width: 900px) { .grid { grid-template-columns: 1fr 320px; align-items: start; } }
+  .idcard { padding: 1.2rem 1.3rem; font-size: 0.82rem; position: sticky; top: 90px; }
+  .row { display: flex; justify-content: space-between; gap: 1rem; padding: 0.5rem 0; border-bottom: 1px dashed var(--line); }
+  .row span:first-child { color: var(--dim); }
+  .y { color: var(--amber); } .g { color: var(--accent); }
+  .links { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1.2rem; }
+  .small { font-size: 0.85rem; }
+</style>

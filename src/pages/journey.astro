@@ -1,0 +1,127 @@
+---
+import Base from '../layouts/Base.astro';
+import { CURRENT_CERT, DOMAINS, MILESTONES, CERTS, TOOLS } from '../data/journey';
+import { getPosts } from '../lib/content';
+
+const overall = Math.round(DOMAINS.reduce((s, d) => s + d.progress, 0) / DOMAINS.length);
+const gcfaPosts = (await getPosts()).filter((p) => p.data.tags.includes('gcfa')).slice(0, 6);
+const R = 54;
+const C = 2 * Math.PI * R;
+---
+<Base title="Journey" description={`Tracking my progress toward the ${CURRENT_CERT.name} and beyond.`}>
+  <section class="wrap">
+    <div class="top">
+      <div class="eyebrow">// training log</div>
+      <h1>The {CURRENT_CERT.name} journey</h1>
+      <p class="muted">{CURRENT_CERT.full} · {CURRENT_CERT.course}. Target exam date: <span class="mono y">{CURRENT_CERT.target}</span></p>
+    </div>
+
+    <div class="overview">
+      <div class="card ring reveal">
+        <svg viewBox="0 0 140 140" role="img" aria-label={`${overall}% overall`}>
+          <circle cx="70" cy="70" r={R} class="bg" />
+          <circle cx="70" cy="70" r={R} class="fg" style={`--off:${C - (C * overall) / 100};--c:${C}`} stroke-dasharray={C} />
+          <text x="70" y="68" text-anchor="middle" class="big">{overall}%</text>
+          <text x="70" y="88" text-anchor="middle" class="small">overall</text>
+        </svg>
+        <div class="certs">
+          {CERTS.map((c) => <span class:list={['cert mono', c.status]}>{c.name} <small>{c.status}</small></span>)}
+        </div>
+      </div>
+
+      <div class="domains">
+        {DOMAINS.map((d) => (
+          <details class="card dom reveal">
+            <summary>
+              <span class="mono id">{d.id}</span>
+              <span class="name">{d.name}</span>
+              <span class="mono pct">{d.progress}%</span>
+              <span class="track"><span class="fill" style={`--p:${d.progress}%`}></span></span>
+            </summary>
+            <p class="muted">{d.notes}</p>
+          </details>
+        ))}
+      </div>
+    </div>
+
+    <div class="cols">
+      <div>
+        <div class="section-head"><h2>milestones</h2></div>
+        <ol class="log">
+          {MILESTONES.map((m) => (
+            <li class="reveal">
+              <time class="mono">{m.date}</time>
+              <strong>{m.title}</strong>
+              <p class="muted">{m.detail}</p>
+            </li>
+          ))}
+        </ol>
+      </div>
+      <div>
+        <div class="section-head"><h2>toolbox</h2></div>
+        <div class="tools">{TOOLS.map((t) => <span class="tag">{t}</span>)}</div>
+        {gcfaPosts.length > 0 && (
+          <>
+            <div class="section-head"><h2>study notes</h2></div>
+            <ul class="notes">
+              {gcfaPosts.map((p) => <li><a href={`/blog/${p.id}/`}>{p.data.title}</a></li>)}
+            </ul>
+          </>
+        )}
+      </div>
+    </div>
+  </section>
+</Base>
+
+<style>
+  .top { padding: 3rem 0 2rem; }
+  h1 { margin: 0.6rem 0 0.4rem; }
+  .y { color: var(--amber); }
+  .overview { display: grid; gap: 1.2rem; }
+  @media (min-width: 860px) { .overview { grid-template-columns: 280px 1fr; } }
+  .ring { padding: 1.5rem; display: flex; flex-direction: column; align-items: center; gap: 1.2rem; }
+  .ring svg { width: 180px; }
+  .bg { fill: none; stroke: var(--line); stroke-width: 10; }
+  .fg {
+    fill: none; stroke: var(--accent); stroke-width: 10; stroke-linecap: round;
+    transform: rotate(-90deg); transform-origin: center;
+    stroke-dashoffset: var(--c); transition: stroke-dashoffset 1.6s cubic-bezier(.2,.8,.2,1);
+    filter: drop-shadow(0 0 6px rgba(57, 255, 136, 0.5));
+  }
+  :global(.reveal.in) .fg { stroke-dashoffset: var(--off); }
+  .big { fill: #fff; font: 700 26px var(--mono); }
+  .small { fill: var(--muted); font: 11px var(--mono); }
+  .certs { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; }
+  .cert { font-size: 0.78rem; padding: 0.2rem 0.6rem; border-radius: 6px; border: 1px solid var(--line-2); }
+  .cert small { color: var(--dim); }
+  .cert.in-progress { border-color: var(--amber); color: var(--amber); }
+  .cert.done { border-color: var(--accent); color: var(--accent); }
+  .domains { display: grid; gap: 0.7rem; }
+  .dom { padding: 0.9rem 1.1rem; }
+  .dom summary {
+    list-style: none; cursor: pointer;
+    display: grid; grid-template-columns: 3.5em 1fr 3em; gap: 0.3rem 0.8rem; align-items: center;
+  }
+  .dom summary::-webkit-details-marker { display: none; }
+  .dom[open] { border-color: var(--accent-dim); }
+  .id { color: var(--dim); font-size: 0.75rem; }
+  .pct { text-align: right; color: var(--accent); font-size: 0.8rem; }
+  .track { grid-column: 1 / -1; height: 5px; background: var(--line); border-radius: 99px; overflow: hidden; }
+  .fill { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent-dim), var(--accent)); transition: width 1.2s cubic-bezier(.2,.8,.2,1) 0.15s; }
+  :global(.reveal.in) .fill { width: var(--p); }
+  .dom p { margin: 0.8rem 0 0; font-size: 0.9rem; }
+  .cols { display: grid; gap: 0 3rem; }
+  @media (min-width: 860px) { .cols { grid-template-columns: 1.2fr 1fr; } }
+  .log { list-style: none; margin: 0; padding: 0 0 0 1.2rem; border-left: 1px dashed var(--line-2); }
+  .log li { position: relative; padding: 0 0 1.4rem 0.4rem; }
+  .log li::before {
+    content: ''; position: absolute; left: calc(-1.2rem - 5px); top: 0.45rem;
+    width: 9px; height: 9px; border-radius: 50%; background: var(--accent); box-shadow: 0 0 10px var(--accent);
+  }
+  .log time { display: block; font-size: 0.75rem; color: var(--dim); }
+  .log p { margin: 0.2rem 0 0; font-size: 0.92rem; }
+  .tools { display: flex; flex-wrap: wrap; gap: 0.45rem; }
+  .tools .tag { font-size: 0.78rem; color: var(--text); }
+  .notes { padding-left: 1.2rem; }
+  .notes li { margin: 0.3rem 0; }
+</style>

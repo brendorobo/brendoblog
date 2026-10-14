@@ -1,0 +1,77 @@
+---
+title: 'GCFA notes: evidence of execution'
+description: Prefetch, Amcache, Shimcache, BAM and UserAssist. What each proves, where it lives, and how they fit on one timeline.
+date: 2026-10-14
+category: GCFA
+tags: [gcfa, windows, artifacts, timeline]
+---
+import Callout from '../../components/mdx/Callout.astro';
+import Cmd from '../../components/mdx/Cmd.astro';
+import Timeline from '../../components/mdx/Timeline.astro';
+import Flashcards from '../../components/mdx/Flashcards.astro';
+
+"Did this binary run?" is one of the first questions in almost every Windows investigation.
+No single artifact answers it on its own, but several of them together usually do.
+
+## The cheat sheet
+
+| Artifact | Location | Proves execution? | Notable data |
+| --- | --- | --- | --- |
+| Prefetch | `C:\Windows\Prefetch\*.pf` | Yes | Run count, up to 8 last run times (Win8+), files referenced |
+| Amcache | `C:\Windows\AppCompat\Programs\Amcache.hve` | Presence, often execution | Full path, SHA1, publisher |
+| Shimcache | `SYSTEM\...\Control\Session Manager\AppCompatCache` | **No** on Win10+ | Path, file last-modified time, order |
+| BAM | `SYSTEM\...\Services\bam\State\UserSettings\{SID}` | Yes | Last execution time per user |
+| UserAssist | `NTUSER.DAT\...\Explorer\UserAssist` | Yes (GUI launches) | ROT13 names, run count, focus time |
+
+<Callout type="warn" title="classic trap">
+Shimcache entries show a file *existed* and was seen by the OS. On modern Windows that alone
+doesn't prove it ran. The timestamp is the file's **last modified** time, not when it ran.
+Pair it with Prefetch, BAM or Amcache before you claim execution.
+</Callout>
+
+## Parsing them
+
+Eric Zimmerman's tools make this fast. Point each one at the artifact and dump to CSV, then
+pull everything into Timeline Explorer.
+
+<Cmd host="forensic-ws" cmd="PECmd.exe -d C:\Cases\E01\Windows\Prefetch --csv C:\Cases\out" />
+<Cmd host="forensic-ws" cmd="AmcacheParser.exe -f C:\Cases\E01\Windows\AppCompat\Programs\Amcache.hve --csv C:\Cases\out" />
+<Cmd host="forensic-ws" cmd="AppCompatCacheParser.exe -f C:\Cases\E01\Windows\System32\config\SYSTEM --csv C:\Cases\out" />
+
+## Putting it on a timeline
+
+Here's a small **practice scenario** I built to see how the artifacts line up. Click a row for
+details, or filter by source.
+
+<Timeline
+  title="practice case: suspicious tool drop"
+  events={[
+    { time: '2026-10-02 13:58:40', source: 'EVTX', event: '4624 logon, type 10 (RDP) from 10.0.20.15', detail: 'Security.evtx. Remote interactive logon for <code>svc_backup</code>, a service account that should never RDP.', flag: true },
+    { time: '2026-10-02 14:01:12', source: '$MFT', event: 'C:\\ProgramData\\p.exe created', detail: '$SI and $FN created times match, so likely no timestomping on this one.' },
+    { time: '2026-10-02 14:01:12', source: 'Shimcache', event: 'C:\\ProgramData\\p.exe entry', detail: 'Shows the file existed. On its own this does <strong>not</strong> prove execution.' },
+    { time: '2026-10-02 14:01:19', source: 'Prefetch', event: 'P.EXE-1A2B3C4D.pf, run count 1', detail: 'This confirms execution. The referenced files include <code>lsass</code>-related DLLs, which is suspicious.', flag: true },
+    { time: '2026-10-02 14:01:19', source: 'Amcache', event: 'p.exe SHA1 recorded', detail: 'Pivot on the SHA1 in threat intel. It matched a known credential dumping tool.', flag: true },
+    { time: '2026-10-02 14:01:20', source: 'BAM', event: 'p.exe last executed by svc_backup SID', detail: 'Ties the execution to a specific user account.' },
+    { time: '2026-10-02 14:06:03', source: 'EVTX', event: '4648 explicit credential logon to FS01', detail: 'Lateral movement starts here. That goes in the next note.', flag: true },
+  ]}
+/>
+
+## Quiz yourself
+
+<Flashcards
+  title="evidence of execution"
+  cards={[
+    { q: 'How many previous run times does Prefetch store on Win8+?', a: 'Up to <strong>8</strong> (plus the run count).' },
+    { q: 'Does a Shimcache entry prove execution on Windows 10?', a: 'No. It shows the file was present and seen by the OS. Corroborate it with other artifacts.' },
+    { q: 'Which artifact gives you a SHA1 of the executable?', a: '<strong>Amcache.hve</strong>' },
+    { q: 'What encoding hides UserAssist value names?', a: '<strong>ROT13</strong>' },
+    { q: 'Where is BAM data stored?', a: 'SYSTEM hive → <code>Services\\bam\\State\\UserSettings\\&#123;SID&#125;</code>' },
+    { q: 'Is Prefetch enabled by default on Windows Server?', a: 'No. It is disabled by default on server SKUs, so don’t count on it there.' },
+  ]}
+/>
+
+## Takeaways
+
+1. Use several artifacts together. One artifact is a lead; three that agree are a finding.
+2. Know what each timestamp *means* before you put it on a timeline.
+3. Next note: **lateral movement artifacts** (4624/4648, RDP bitmap cache, PsExec traces).

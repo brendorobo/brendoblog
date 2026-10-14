@@ -1,0 +1,125 @@
+---
+import Base from '../layouts/Base.astro';
+import TerminalHero from '../components/TerminalHero.astro';
+import PostCard from '../components/PostCard.astro';
+import { getPosts, getLabs, readingTime } from '../lib/content';
+import { CURRENT_CERT, DOMAINS } from '../data/journey';
+
+const posts = await getPosts();
+const labs = await getLabs();
+const items = [
+  ...posts.map((p) => ({ slug: p.id, title: p.data.title, kind: 'post' as const })),
+  ...labs.map((l) => ({ slug: l.id, title: l.data.title, kind: 'lab' as const })),
+];
+const overall = Math.round(DOMAINS.reduce((s, d) => s + d.progress, 0) / DOMAINS.length);
+---
+<Base>
+  <section class="wrap hero">
+    <div class="intro">
+      <div class="eyebrow">// digital forensics · incident response · lab notes</div>
+      <h1>Learning DFIR in public, <span class="hl">one artifact at a time.</span></h1>
+      <p class="lede">
+        I’m Brendon. I work in security and I’m leveling up in forensics, working toward the{' '}
+        <strong>{CURRENT_CERT.name}</strong>. This is my notebook: what I study, what I break in the homelab, and what I learn from it.
+      </p>
+      <div class="cta">
+        <a class="btn" href="/blog/">read the notes →</a>
+        <a class="btn ghost" href="/journey/">gcfa progress: {overall}%</a>
+      </div>
+    </div>
+    <TerminalHero items={items} />
+  </section>
+
+  <section class="wrap">
+    <div class="section-head">
+      <h2>latest notes</h2>
+      <a class="mono" href="/blog/">all posts →</a>
+    </div>
+    <div class="grid">
+      {posts.slice(0, 3).map((p) => (
+        <PostCard
+          href={`/blog/${p.id}/`}
+          title={p.data.title}
+          description={p.data.description}
+          date={p.data.date}
+          label={p.data.category}
+          tags={p.data.tags}
+          cover={p.data.cover}
+          readMins={readingTime(p.body)}
+        />
+      ))}
+    </div>
+
+    <div class="section-head">
+      <h2>labs &amp; experiments</h2>
+      <a class="mono" href="/labs/">all labs →</a>
+    </div>
+    <div class="grid">
+      {labs.slice(0, 3).map((l) => (
+        <PostCard
+          href={`/labs/${l.id}/`}
+          title={l.data.title}
+          description={l.data.description}
+          date={l.data.date}
+          label={l.data.status}
+          tags={l.data.stack}
+          cover={l.data.cover}
+        />
+      ))}
+    </div>
+
+    <div class="section-head">
+      <h2>currently studying</h2>
+      <a class="mono" href="/journey/">full journey →</a>
+    </div>
+    <a href="/journey/" class="card study reveal">
+      <div class="mono study-top">
+        <span><span class="y">{CURRENT_CERT.name}</span> · {CURRENT_CERT.course}</span>
+        <span class="muted">{overall}% overall</span>
+      </div>
+      <div class="bars">
+        {DOMAINS.map((d) => (
+          <div class="bar">
+            <span class="mono id">{d.id}</span>
+            <span class="name">{d.name}</span>
+            <span class="track"><span class="fill" style={`--p:${d.progress}%`}></span></span>
+            <span class="mono pct">{d.progress}%</span>
+          </div>
+        ))}
+      </div>
+    </a>
+  </section>
+</Base>
+
+<style>
+  .hero {
+    display: grid; gap: 2.5rem; align-items: center;
+    padding-top: 3.5rem; padding-bottom: 1rem;
+  }
+  @media (min-width: 960px) { .hero { grid-template-columns: 1.05fr 1fr; padding-top: 5rem; } }
+  h1 { margin: 0.8rem 0 1rem; }
+  .hl {
+    background: linear-gradient(90deg, var(--accent), var(--cyan));
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .lede { color: var(--muted); font-size: 1.1rem; max-width: 52ch; }
+  .lede strong { color: var(--amber); }
+  .cta { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 1.5rem; }
+  .btn.ghost { border-color: var(--line-2); color: var(--text); background: transparent; }
+  .grid { display: grid; gap: 1.2rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+  .study { padding: 1.3rem 1.4rem; }
+  .study-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; font-size: 0.8rem; margin-bottom: 1rem; }
+  .y { color: var(--amber); }
+  .bars { display: grid; gap: 0.7rem; }
+  .bar { display: grid; grid-template-columns: 3.5em minmax(0, 15em) 1fr 3em; gap: 0.8rem; align-items: center; font-size: 0.88rem; }
+  .id { color: var(--dim); font-size: 0.75rem; }
+  .track { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; }
+  .fill { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent-dim), var(--accent)); transition: width 1.2s cubic-bezier(.2,.8,.2,1) 0.2s; }
+  :global(.reveal.in) .fill { width: var(--p); }
+  .pct { text-align: right; color: var(--muted); font-size: 0.75rem; }
+  @media (max-width: 600px) {
+    .bar { grid-template-columns: 3.2em 1fr 2.8em; }
+    .name { grid-column: 2 / 4; }
+    .track { grid-column: 1 / 3; }
+  }
+</style>

@@ -1,0 +1,110 @@
+---
+import Base from './Base.astro';
+
+interface Heading { depth: number; slug: string; text: string }
+interface Props {
+  title: string;
+  description: string;
+  date: Date;
+  updated?: Date;
+  label?: string;
+  tags?: string[];
+  cover?: string;
+  headings?: Heading[];
+  readMins?: number;
+  back: { href: string; label: string };
+  extra?: { k: string; v: string; href?: string }[];
+}
+const { title, description, date, updated, label, tags = [], cover, headings = [], readMins, back, extra = [] } = Astro.props;
+const iso = (d: Date) => d.toISOString().slice(0, 10);
+const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
+---
+<Base title={title} description={description} image={cover}>
+  <div class="progress" aria-hidden="true"><span></span></div>
+  <article class="wrap article">
+    <a class="back mono" href={back.href}>← {back.label}</a>
+    <header class="head">
+      <div class="meta mono">
+        {label && <span class="label">{label}</span>}
+        <span>acquired <time datetime={iso(date)}>{iso(date)}</time></span>
+        {updated && <span>· updated {iso(updated)}</span>}
+        {readMins && <span>· {readMins} min read</span>}
+      </div>
+      <h1>{title}</h1>
+      <p class="lede">{description}</p>
+      {extra.length > 0 && (
+        <dl class="extra mono">
+          {extra.map((e) => (
+            <div><dt>{e.k}</dt><dd>{e.href ? <a href={e.href}>{e.v}</a> : e.v}</dd></div>
+          ))}
+        </dl>
+      )}
+      {tags.length > 0 && <div class="tags">{tags.map((t) => <a class="tag" href={`/tags/${t}/`}>#{t}</a>)}</div>}
+    </header>
+    {cover && <img class="cover" src={cover} alt="" />}
+    <div class="grid">
+      <div class="prose"><slot /></div>
+      {toc.length > 2 && (
+        <nav class="toc mono" aria-label="On this page">
+          <div class="toc-h">// contents</div>
+          {toc.map((h) => <a href={`#${h.slug}`} class={`d${h.depth}`} data-toc={h.slug}>{h.text}</a>)}
+        </nav>
+      )}
+    </div>
+  </article>
+</Base>
+
+<script>
+  const bar = document.querySelector<HTMLElement>('.progress span');
+  const onScroll = () => {
+    const h = document.documentElement;
+    const p = h.scrollTop / Math.max(1, h.scrollHeight - h.clientHeight);
+    if (bar) bar.style.transform = `scaleX(${p})`;
+  };
+  addEventListener('scroll', onScroll, { passive: true });
+  onScroll();
+
+  // Highlight the current section in the TOC
+  const links = new Map([...document.querySelectorAll<HTMLAnchorElement>('[data-toc]')].map((a) => [a.dataset.toc!, a]));
+  if (links.size) {
+    const io = new IntersectionObserver(
+      (es) => es.forEach((e) => {
+        if (e.isIntersecting) {
+          links.forEach((a) => a.classList.remove('on'));
+          links.get(e.target.id)?.classList.add('on');
+        }
+      }),
+      { rootMargin: '-15% 0px -75% 0px' }
+    );
+    links.forEach((_, id) => { const el = document.getElementById(id); if (el) io.observe(el); });
+  }
+</script>
+
+<style>
+  .progress { position: fixed; top: 0; left: 0; right: 0; height: 2px; z-index: 60; }
+  .progress span { display: block; height: 100%; background: var(--accent); transform-origin: left; transform: scaleX(0); box-shadow: 0 0 8px var(--accent); }
+  .article { padding-top: 2.5rem; }
+  .back { font-size: 0.8rem; color: var(--muted); }
+  .head { max-width: 72ch; margin: 1.5rem 0 2rem; }
+  .meta { display: flex; flex-wrap: wrap; gap: 0.6rem; align-items: center; font-size: 0.75rem; color: var(--dim); }
+  .label { color: var(--amber); border: 1px solid rgba(255, 181, 71, 0.35); padding: 0.05rem 0.45rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+  h1 { margin: 0.8rem 0 0.6rem; }
+  .lede { font-size: 1.15rem; color: var(--muted); margin: 0 0 1rem; }
+  .tags { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .extra { display: flex; flex-wrap: wrap; gap: 0.5rem 1.6rem; font-size: 0.78rem; margin: 0 0 1rem; }
+  .extra div { display: flex; gap: 0.5rem; }
+  .extra dt { color: var(--dim); }
+  .extra dd { margin: 0; color: var(--text); }
+  .cover { width: 100%; max-height: 440px; object-fit: cover; border-radius: var(--radius); border: 1px solid var(--line); margin-bottom: 2rem; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr); gap: 3rem; }
+  @media (min-width: 1040px) { .grid { grid-template-columns: minmax(0, 72ch) 220px; justify-content: space-between; } }
+  .toc { display: none; }
+  @media (min-width: 1040px) {
+    .toc { display: flex; flex-direction: column; gap: 0.45rem; position: sticky; top: 90px; align-self: start; font-size: 0.78rem; border-left: 1px solid var(--line); padding-left: 1rem; }
+  }
+  .toc-h { color: var(--dim); margin-bottom: 0.3rem; }
+  .toc a { color: var(--muted); }
+  .toc a.d3 { padding-left: 0.8rem; font-size: 0.74rem; }
+  .toc a.on, .toc a:hover { color: var(--accent); text-decoration: none; }
+  .prose :global(h2), .prose :global(h3) { scroll-margin-top: 80px; }
+</style>

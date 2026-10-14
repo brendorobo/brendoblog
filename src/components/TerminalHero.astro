@@ -1,0 +1,179 @@
+---
+// Interactive shell on the home page. Commands are handled client-side;
+// the post/lab list is passed in so `ls` and `open` know about real content.
+interface Item { slug: string; title: string; kind: 'post' | 'lab' }
+interface Props { items: Item[] }
+const { items } = Astro.props;
+---
+<div class="term card" data-term>
+  <div class="term-top">
+    <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+    <span class="term-title mono">analyst@sift: ~/casefiles</span>
+  </div>
+  <div class="term-body mono" data-out aria-live="polite"></div>
+  <form class="term-in mono" data-form autocomplete="off">
+    <label for="term-input"><span class="p">analyst@sift</span>:<span class="c">~</span>$</label>
+    <input id="term-input" data-input spellcheck="false" aria-label="Terminal command" placeholder="type 'help'" />
+  </form>
+  <script type="application/json" data-items set:html={JSON.stringify(items)} />
+</div>
+
+<script>
+  type Item = { slug: string; title: string; kind: 'post' | 'lab' };
+
+  document.querySelectorAll<HTMLElement>('[data-term]').forEach((root) => {
+    const out = root.querySelector<HTMLElement>('[data-out]')!;
+    const form = root.querySelector<HTMLFormElement>('[data-form]')!;
+    const input = root.querySelector<HTMLInputElement>('[data-input]')!;
+    const items: Item[] = JSON.parse(root.querySelector('[data-items]')!.textContent || '[]');
+    const history: string[] = [];
+    let hIdx = 0;
+
+    const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
+    const line = (html: string, cls = '') => {
+      const d = document.createElement('div');
+      if (cls) d.className = cls;
+      d.innerHTML = html;
+      out.appendChild(d);
+      out.scrollTop = out.scrollHeight;
+    };
+    const url = (i: Item) => (i.kind === 'post' ? `/blog/${i.slug}/` : `/labs/${i.slug}/`);
+
+    const routes: Record<string, string> = {
+      blog: '/blog/', labs: '/labs/', journey: '/journey/', about: '/about/', whoami: '/about/', home: '/',
+    };
+
+    const cmds: Record<string, (args: string[]) => void> = {
+      help() {
+        line(`<span class="k">available commands</span>`);
+        [
+          ['whoami', 'who runs this box'],
+          ['ls [posts|labs]', 'list case files'],
+          ['open &lt;n&gt;', 'open item n from the last ls'],
+          ['cd &lt;blog|labs|journey|about&gt;', 'navigate'],
+          ['gcfa', 'current cert-prep status'],
+          ['grep &lt;term&gt;', 'search titles'],
+          ['triage', 'run a (fake) live response'],
+          ['history · clear', 'the usual'],
+        ].forEach(([c, d]) => line(`  <span class="g">${c.padEnd(30, ' ')}</span><span class="m">${d}</span>`));
+      },
+      whoami() {
+        line(`<span class="g">brendon</span> · security practitioner · DFIR student · homelab tinkerer`);
+        line(`<span class="m">groups: blue-team, sans-gcfa-prep, coffee</span>`);
+      },
+      ls(args) {
+        const f = args[0];
+        const list = items.filter((i) => !f || (f.startsWith('post') && i.kind === 'post') || (f.startsWith('lab') && i.kind === 'lab'));
+        last = list;
+        if (!list.length) return line('<span class="m">(empty)</span>');
+        list.forEach((i, n) =>
+          line(`<span class="m">[${n + 1}]</span> <span class="${i.kind === 'post' ? 'c' : 'y'}">${i.kind}</span>  <a href="${url(i)}">${esc(i.title)}</a>`)
+        );
+        line(`<span class="m">tip: open 1</span>`);
+      },
+      open(args) {
+        const n = parseInt(args[0], 10);
+        const it = (last.length ? last : items)[n - 1];
+        if (!it) return line(`<span class="r">open: no such item. run ls first.</span>`);
+        line(`<span class="m">mounting ${esc(it.slug)} read-only...</span>`);
+        setTimeout(() => (location.href = url(it)), 350);
+      },
+      cd(args) {
+        const r = routes[(args[0] || '').replace(/^\/|\/$/g, '')];
+        if (!r) return line(`<span class="r">cd: ${esc(args[0] || '')}: No such directory</span>`);
+        location.href = r;
+      },
+      grep(args) {
+        const q = args.join(' ').toLowerCase();
+        if (!q) return line('<span class="r">usage: grep &lt;term&gt;</span>');
+        const hits = items.filter((i) => i.title.toLowerCase().includes(q));
+        last = hits;
+        if (!hits.length) return line(`<span class="m">no hits for "${esc(q)}"</span>`);
+        hits.forEach((i, n) => line(`<span class="m">[${n + 1}]</span> <a href="${url(i)}">${esc(i.title)}</a>`));
+      },
+      gcfa() {
+        line(`<span class="y">GCFA</span> — GIAC Certified Forensic Analyst (SANS FOR508)`);
+        line(`<span class="m">status: in progress · see</span> <a href="/journey/">/journey</a>`);
+      },
+      triage() {
+        const steps = [
+          ['collecting volatile data', 'g'],
+          ['pslist / pstree ............ 142 procs', 'm'],
+          ['netscan .................... 3 suspicious conns', 'y'],
+          ['amcache + shimcache ........ parsed', 'm'],
+          ['$MFT timeline .............. 1,284,903 rows', 'm'],
+          ['verdict: go read the blog, analyst.', 'g'],
+        ];
+        steps.forEach(([s, c], i) => setTimeout(() => line(`<span class="${c}">» ${s}</span>`), 280 * (i + 1)));
+      },
+      history() { history.forEach((h, i) => line(`<span class="m">${String(i + 1).padStart(4)}</span>  ${esc(h)}`)); },
+      clear() { out.innerHTML = ''; },
+      sudo() { line('<span class="r">analyst is not in the sudoers file. This incident will be reported.</span>'); },
+      rm() { line('<span class="r">rm: refusing — evidence must stay write-protected.</span>'); },
+      date() { line(new Date().toString()); },
+    };
+    let last: Item[] = [];
+
+    const run = (raw: string) => {
+      const cmd = raw.trim();
+      line(`<span class="p">analyst@sift</span>:<span class="c">~</span>$ ${esc(cmd)}`, 'echo');
+      if (!cmd) return;
+      history.push(cmd);
+      hIdx = history.length;
+      const [name, ...args] = cmd.split(/\s+/);
+      const fn = cmds[name.toLowerCase()];
+      if (fn) fn(args);
+      else line(`<span class="r">${esc(name)}: command not found</span> <span class="m">— try 'help'</span>`);
+    };
+
+    form.addEventListener('submit', (e) => { e.preventDefault(); run(input.value); input.value = ''; });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowUp' && hIdx > 0) { input.value = history[--hIdx]; e.preventDefault(); }
+      if (e.key === 'ArrowDown') { hIdx = Math.min(history.length, hIdx + 1); input.value = history[hIdx] || ''; }
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const m = Object.keys(cmds).find((c) => c.startsWith(input.value));
+        if (m) input.value = m + ' ';
+      }
+    });
+    root.querySelector('.term-body')!.addEventListener('click', () => input.focus({ preventScroll: true }));
+
+    // Boot sequence
+    const boot = [
+      '<span class="m">SIFT workstation · case BR-2026 · evidence mounted ro,noexec</span>',
+      '<span class="g">welcome, analyst.</span> type <span class="y">help</span> to see commands, or <span class="y">ls</span> to browse case files.',
+    ];
+    boot.forEach((b, i) => setTimeout(() => line(b), 250 * i));
+  });
+</script>
+
+<style>
+  .term { overflow: hidden; box-shadow: 0 30px 80px -40px rgba(57, 255, 136, 0.35); }
+  .term-top {
+    display: flex; align-items: center; gap: 7px;
+    padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); background: var(--bg-2);
+  }
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .r { background: #ff5f57; } .y { background: #febc2e; } .g { background: #28c840; }
+  .term-title { margin-left: 0.6rem; font-size: 0.75rem; color: var(--dim); }
+  .term-body {
+    height: 270px; overflow-y: auto; padding: 0.9rem 1rem 0.2rem;
+    font-size: 0.84rem; line-height: 1.6; white-space: pre-wrap; word-break: break-word;
+    cursor: text;
+  }
+  .term-in { display: flex; gap: 0.5rem; padding: 0.2rem 1rem 0.9rem; font-size: 0.84rem; }
+  .term-in label { white-space: nowrap; color: var(--text); }
+  .term-in input {
+    flex: 1; min-width: 0; background: transparent; border: 0; outline: none;
+    color: var(--text); font: inherit; caret-color: var(--accent);
+  }
+  .term-in input::placeholder { color: var(--dim); }
+  :global(.term-body .g), :global(.term-in .p), :global(.term-body .p) { color: var(--accent); background: none; }
+  :global(.term-body .c), :global(.term-in .c) { color: var(--cyan); }
+  :global(.term-body .y) { color: var(--amber); background: none; }
+  :global(.term-body .r) { color: var(--red); background: none; }
+  :global(.term-body .m) { color: var(--muted); }
+  :global(.term-body .k) { color: #fff; font-weight: 700; }
+  :global(.term-body .echo) { margin-top: 0.4rem; }
+  :global(.term-body a) { color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); }
+</style>

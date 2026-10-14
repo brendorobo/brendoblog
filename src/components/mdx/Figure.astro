@@ -1,0 +1,42 @@
+---
+// <Figure src="/images/posts/my-post/screenshot.png" alt="..." caption="..." />
+// Click to zoom. Put images in public/images/... and reference them by path.
+interface Props { src: string; alt: string; caption?: string; wide?: boolean }
+const { src, alt, caption, wide = false } = Astro.props;
+---
+<figure class:list={['fig', { wide }]}>
+  <button type="button" class="zoom" aria-label={`Enlarge: ${alt}`}>
+    <img src={src} alt={alt} loading="lazy" decoding="async" />
+  </button>
+  {caption && <figcaption class="mono">fig. {caption}</figcaption>}
+</figure>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('.fig .zoom').forEach((btn) =>
+    btn.addEventListener('click', () => {
+      const img = btn.querySelector('img')!;
+      const dlg = document.createElement('dialog');
+      dlg.className = 'lightbox';
+      dlg.innerHTML = `<img src="${img.currentSrc || img.src}" alt="">`;
+      dlg.querySelector('img')!.alt = img.alt;
+      dlg.addEventListener('click', () => dlg.close());
+      dlg.addEventListener('close', () => dlg.remove());
+      document.body.appendChild(dlg);
+      dlg.showModal();
+    })
+  );
+</script>
+
+<style>
+  .fig { margin: 1.8rem 0; }
+  .fig.wide { margin-left: clamp(-8rem, -8vw, 0rem); margin-right: clamp(-8rem, -8vw, 0rem); }
+  .zoom { all: unset; cursor: zoom-in; display: block; }
+  .zoom:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: var(--radius); }
+  img { display: block; width: 100%; border-radius: var(--radius); border: 1px solid var(--line); }
+  figcaption { margin-top: 0.5rem; font-size: 0.78rem; color: var(--muted); }
+  :global(dialog.lightbox) {
+    border: 0; padding: 0; background: transparent; max-width: 95vw; max-height: 95vh; cursor: zoom-out;
+  }
+  :global(dialog.lightbox::backdrop) { background: rgba(0, 0, 0, 0.85); }
+  :global(dialog.lightbox img) { max-width: 95vw; max-height: 92vh; border-radius: 8px; display: block; }
+</style>

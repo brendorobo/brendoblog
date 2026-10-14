@@ -1,0 +1,99 @@
+---
+// Filterable super-timeline for walking through an attack or a lab.
+// <Timeline title="..." events={[{ time: '2026-10-01 14:02:11', source: 'EVTX', event: '4624 logon type 10', detail: '...', flag: true }]} />
+interface Ev { time: string; source: string; event: string; detail?: string; flag?: boolean }
+interface Props { title?: string; events: Ev[] }
+const { title = 'super-timeline', events } = Astro.props;
+const sources = [...new Set(events.map((e) => e.source))];
+const palette = ['var(--cyan)', 'var(--amber)', 'var(--violet)', 'var(--accent)', 'var(--red)', '#7fd1b9', '#f78fb3'];
+const color = (s: string) => palette[sources.indexOf(s) % palette.length];
+---
+<section class="tl" data-tl>
+  <header class="tl-head mono">
+    <span>⏱ {title} <span class="muted">· {events.length} events</span></span>
+    <div class="filters" role="group" aria-label="Filter by artifact source">
+      <button type="button" class="f on" data-f="*">all</button>
+      {sources.map((s) => (
+        <button type="button" class="f" data-f={s} style={`--c:${color(s)}`}>{s}</button>
+      ))}
+      <button type="button" class="f flagf" data-f="!">⚑ flagged</button>
+    </div>
+  </header>
+  <ol class="rows">
+    {events.map((e) => (
+      <li class:list={['row', { flag: e.flag }]} data-src={e.source} data-flag={e.flag ? '1' : '0'}>
+        <button type="button" class="line" aria-expanded="false">
+          <span class="t mono">{e.time}</span>
+          <span class="src mono" style={`--c:${color(e.source)}`}>{e.source}</span>
+          <span class="ev">{e.event}</span>
+          {e.flag && <span class="fl" title="flagged">⚑</span>}
+        </button>
+        {e.detail && <div class="detail" hidden set:html={e.detail} />}
+      </li>
+    ))}
+  </ol>
+</section>
+
+<script>
+  document.querySelectorAll<HTMLElement>('[data-tl]').forEach((tl) => {
+    const btns = tl.querySelectorAll<HTMLButtonElement>('.f');
+    const rows = tl.querySelectorAll<HTMLLIElement>('.row');
+    btns.forEach((b) =>
+      b.addEventListener('click', () => {
+        btns.forEach((x) => x.classList.toggle('on', x === b));
+        const f = b.dataset.f!;
+        rows.forEach((r) => {
+          r.hidden = !(f === '*' || (f === '!' ? r.dataset.flag === '1' : r.dataset.src === f));
+        });
+      })
+    );
+    rows.forEach((r) => {
+      const line = r.querySelector<HTMLButtonElement>('.line')!;
+      const d = r.querySelector<HTMLElement>('.detail');
+      if (!d) return;
+      line.addEventListener('click', () => {
+        d.hidden = !d.hidden;
+        line.setAttribute('aria-expanded', String(!d.hidden));
+        r.classList.toggle('open', !d.hidden);
+      });
+    });
+  });
+</script>
+
+<style>
+  .tl { margin: 2rem 0; border: 1px solid var(--line); border-radius: var(--radius); background: var(--bg-2); overflow: hidden; }
+  .tl-head {
+    display: flex; flex-direction: column; gap: 0.6rem;
+    padding: 0.8rem 1rem; border-bottom: 1px solid var(--line); font-size: 0.8rem;
+  }
+  .filters { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .f {
+    --c: var(--muted);
+    font: inherit; font-size: 0.72rem; cursor: pointer;
+    padding: 0.15rem 0.6rem; border-radius: 999px;
+    background: transparent; color: var(--c); border: 1px solid color-mix(in srgb, var(--c) 40%, transparent);
+  }
+  .f.on { background: color-mix(in srgb, var(--c) 18%, transparent); color: #fff; }
+  .f[data-f='*'] { --c: var(--text); }
+  .flagf { --c: var(--red); }
+  .rows { list-style: none; margin: 0; padding: 0; max-height: 460px; overflow-y: auto; }
+  .row { border-bottom: 1px solid var(--line); }
+  .row:last-child { border-bottom: 0; }
+  .row.flag { background: rgba(255, 90, 106, 0.05); }
+  .line {
+    all: unset; box-sizing: border-box; width: 100%; cursor: pointer;
+    display: grid; grid-template-columns: auto auto 1fr auto; gap: 0.8rem; align-items: baseline;
+    padding: 0.55rem 1rem; font-size: 0.86rem;
+  }
+  .line:hover { background: var(--panel); }
+  .line:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .t { color: var(--dim); font-size: 0.76rem; white-space: nowrap; }
+  .src { color: var(--c); font-size: 0.72rem; min-width: 5.5em; }
+  .ev { color: var(--text); }
+  .fl { color: var(--red); }
+  .detail { padding: 0 1rem 0.8rem; font-size: 0.85rem; color: var(--muted); border-left: 2px solid var(--accent-dim); margin-left: 1rem; }
+  @media (max-width: 600px) {
+    .line { grid-template-columns: 1fr auto; }
+    .t { grid-column: 1 / -1; }
+  }
+</style>

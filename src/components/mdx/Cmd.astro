@@ -1,0 +1,45 @@
+---
+// A terminal snippet with copy button and optional output.
+// <Cmd cmd="vol -f mem.raw windows.pslist" output={`PID  PPID ...`} host="sift" />
+interface Props { cmd: string; output?: string; host?: string; title?: string }
+const { cmd, output, host = 'sift', title } = Astro.props;
+---
+<figure class="cmd">
+  <figcaption class="top mono">
+    <span>{title ?? `${host} — bash`}</span>
+    <button class="copy" type="button" data-copy={cmd}>copy</button>
+  </figcaption>
+  <pre class="mono"><span class="ps">analyst@{host}:~$</span> <span class="in">{cmd}</span>{output && <span class="out">{'\n'}{output}</span>}</pre>
+</figure>
+
+<script>
+  document.querySelectorAll<HTMLButtonElement>('.cmd .copy').forEach((b) =>
+    b.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(b.dataset.copy || '');
+        b.textContent = 'copied ✓';
+      } catch {
+        b.textContent = 'select + copy';
+      }
+      setTimeout(() => (b.textContent = 'copy'), 1500);
+    })
+  );
+</script>
+
+<style>
+  .cmd { margin: 1.5rem 0; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; background: #050807; }
+  .top {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 0.4rem 0.8rem; font-size: 0.72rem; color: var(--dim);
+    background: var(--bg-2); border-bottom: 1px solid var(--line);
+  }
+  .copy {
+    font: inherit; color: var(--muted); background: none; border: 1px solid var(--line-2);
+    border-radius: 5px; padding: 0.1rem 0.5rem; cursor: pointer;
+  }
+  .copy:hover { color: var(--accent); border-color: var(--accent-dim); }
+  pre { margin: 0; border: 0; border-radius: 0; background: transparent; white-space: pre-wrap; }
+  .ps { color: var(--accent); }
+  .in { color: #fff; }
+  .out { color: var(--muted); }
+</style>

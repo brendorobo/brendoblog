@@ -1,0 +1,26 @@
+---
+// <Callout type="tip|warn|ioc|note" title="...">text</Callout>
+interface Props { type?: 'tip' | 'warn' | 'ioc' | 'note'; title?: string }
+const { type = 'note', title } = Astro.props;
+const labels = { tip: 'analyst tip', warn: 'gotcha', ioc: 'indicator', note: 'note' };
+---
+<aside class={`callout ${type}`}>
+  <div class="label mono">[{title ?? labels[type]}]</div>
+  <div class="body"><slot /></div>
+</aside>
+
+<style>
+  .callout {
+    --c: var(--cyan);
+    margin: 1.6rem 0; padding: 0.9rem 1.1rem;
+    border: 1px solid color-mix(in srgb, var(--c) 35%, transparent);
+    border-left: 3px solid var(--c);
+    border-radius: 8px;
+    background: color-mix(in srgb, var(--c) 6%, transparent);
+  }
+  .tip { --c: var(--accent); }
+  .warn { --c: var(--amber); }
+  .ioc { --c: var(--red); }
+  .label { color: var(--c); font-size: 0.75rem; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 0.3rem; }
+  .body :global(p) { margin: 0.3rem 0; }
+</style>

@@ -1,0 +1,35 @@
+---
+title: Building a DFIR practice range
+description: A small homelab where I can attack my own machines, then investigate what I left behind.
+date: 2026-10-14
+status: active
+stack: [Proxmox, Windows 11, Server 2022, Velociraptor, Sysmon, SIFT]
+---
+import Callout from '../../components/mdx/Callout.astro';
+
+You can't practice forensics without evidence. This lab is a small range I can deliberately
+compromise and then investigate like a real case.
+
+## Design goals
+
+- **Realistic enough**: domain-joined Windows hosts, a DC, real user activity.
+- **Disposable**: snapshot everything so I can reset after each scenario.
+- **Instrumented**: Sysmon + Velociraptor for collection, so I can compare live response with dead-box analysis.
+
+## Build log
+
+- [x] Hypervisor up, isolated lab VLAN
+- [ ] Domain controller + 2 workstations
+- [ ] Sysmon with a tuned config
+- [ ] Velociraptor server + clients
+- [ ] First scenario: credential dumping → lateral movement
+- [ ] Acquire memory + disk, investigate on SIFT, write it up
+
+<Callout type="note">
+Every scenario I run here becomes its own post with the timeline, the artifacts, and what I
+missed the first time through.
+</Callout>
+
+{/* Drop screenshots in public/images/labs/dfir-homelab-range/ and use:
+import Figure from '../../components/mdx/Figure.astro';
+<Figure src="/images/labs/dfir-homelab-range/topology.png" alt="Lab topology" caption="network layout" /> */}

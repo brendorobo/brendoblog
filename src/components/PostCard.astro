@@ -1,0 +1,38 @@
+---
+interface Props {
+  href: string;
+  title: string;
+  description: string;
+  date: Date;
+  label?: string;
+  tags?: string[];
+  cover?: string;
+  readMins?: number;
+}
+const { href, title, description, date, label, tags = [], cover, readMins } = Astro.props;
+const iso = date.toISOString().slice(0, 10);
+---
+<a href={href} class="card post reveal">
+  {cover && <img class="cover" src={cover} alt="" loading="lazy" />}
+  <div class="inner">
+    <div class="meta mono">
+      {label && <span class="label">{label}</span>}
+      <time datetime={iso}>{iso}</time>
+      {readMins && <span>· {readMins} min</span>}
+    </div>
+    <h3>{title}</h3>
+    <p class="muted">{description}</p>
+    {tags.length > 0 && <div class="tags">{tags.map((t) => <span class="tag">#{t}</span>)}</div>}
+  </div>
+</a>
+
+<style>
+  .post { overflow: hidden; height: 100%; display: flex !important; flex-direction: column; }
+  .cover { width: 100%; aspect-ratio: 16 / 8; object-fit: cover; border-bottom: 1px solid var(--line); }
+  .inner { padding: 1.2rem 1.3rem 1.3rem; display: flex; flex-direction: column; flex: 1; }
+  .meta { display: flex; gap: 0.6rem; align-items: center; font-size: 0.72rem; color: var(--dim); flex-wrap: wrap; }
+  .label { color: var(--amber); border: 1px solid rgba(255, 181, 71, 0.35); padding: 0.05rem 0.45rem; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.06em; }
+  h3 { margin: 0.6rem 0 0.4rem; font-size: 1.15rem; }
+  p { margin: 0 0 1rem; font-size: 0.93rem; flex: 1; }
+  .tags { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+</style>

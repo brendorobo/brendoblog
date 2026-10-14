@@ -1,0 +1,88 @@
+---
+import Base from '../../layouts/Base.astro';
+import PostCard from '../../components/PostCard.astro';
+import { getPosts, readingTime } from '../../lib/content';
+
+const posts = await getPosts();
+const categories = [...new Set(posts.map((p) => p.data.category))];
+---
+<Base title="Blog" description="Notes, study logs and write-ups.">
+  <section class="wrap">
+    <div class="top">
+      <div class="eyebrow">// evidence locker</div>
+      <h1>Notes &amp; write-ups</h1>
+      <p class="muted">{posts.length} entries. Filter by category or grep for something specific.</p>
+      <div class="controls">
+        <input class="search mono" type="search" placeholder="grep -i ..." aria-label="Search posts" data-search />
+        <div class="cats mono" role="group" aria-label="Filter by category">
+          <button type="button" class="on" data-cat="*">all</button>
+          {categories.map((c) => <button type="button" data-cat={c}>{c}</button>)}
+        </div>
+      </div>
+    </div>
+    <div class="grid" data-list>
+      {posts.map((p) => (
+        <div class="item" data-cat={p.data.category} data-text={`${p.data.title} ${p.data.description} ${p.data.tags.join(' ')}`.toLowerCase()}>
+          <PostCard
+            href={`/blog/${p.id}/`}
+            title={p.data.title}
+            description={p.data.description}
+            date={p.data.date}
+            label={p.data.category}
+            tags={p.data.tags}
+            cover={p.data.cover}
+            readMins={readingTime(p.body)}
+          />
+        </div>
+      ))}
+    </div>
+    <p class="empty mono muted" hidden data-empty>0 hits. try a broader search.</p>
+  </section>
+</Base>
+
+<script>
+  const input = document.querySelector<HTMLInputElement>('[data-search]')!;
+  const btns = document.querySelectorAll<HTMLButtonElement>('[data-cat]:is(button)');
+  const items = document.querySelectorAll<HTMLElement>('.item');
+  const empty = document.querySelector<HTMLElement>('[data-empty]')!;
+  let cat = '*';
+  const apply = () => {
+    const q = input.value.trim().toLowerCase();
+    let n = 0;
+    items.forEach((it) => {
+      const ok = (cat === '*' || it.dataset.cat === cat) && (!q || it.dataset.text!.includes(q));
+      it.hidden = !ok;
+      if (ok) n++;
+    });
+    empty.hidden = n > 0;
+  };
+  input.addEventListener('input', apply);
+  btns.forEach((b) => b.addEventListener('click', () => {
+    cat = b.dataset.cat!;
+    btns.forEach((x) => x.classList.toggle('on', x === b));
+    apply();
+  }));
+  // "/" focuses search
+  addEventListener('keydown', (e) => {
+    if (e.key === '/' && document.activeElement !== input) { e.preventDefault(); input.focus(); }
+  });
+</script>
+
+<style>
+  .top { padding: 3rem 0 2rem; }
+  h1 { margin: 0.6rem 0 0.4rem; }
+  .controls { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; margin-top: 1.5rem; }
+  .search {
+    flex: 1 1 260px; max-width: 420px; padding: 0.65rem 0.9rem; font-size: 0.88rem;
+    background: var(--bg-2); color: var(--text); border: 1px solid var(--line-2); border-radius: 8px; outline: none;
+  }
+  .search:focus { border-color: var(--accent-dim); box-shadow: 0 0 0 3px rgba(57, 255, 136, 0.1); }
+  .cats { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .cats button {
+    font: inherit; font-size: 0.76rem; cursor: pointer; padding: 0.3rem 0.75rem; border-radius: 999px;
+    background: transparent; color: var(--muted); border: 1px solid var(--line-2);
+  }
+  .cats button.on { color: #000; background: var(--accent); border-color: var(--accent); }
+  .grid { display: grid; gap: 1.2rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+  .empty { margin-top: 2rem; }
+</style>
