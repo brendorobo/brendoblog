@@ -8,7 +8,7 @@ interface Props {
   image?: string;
 }
 const { title, description = SITE.description, image } = Astro.props;
-const fullTitle = title ? `${title} · ${SITE.name}` : SITE.title;
+const fullTitle = title ? `${title} · ${SITE.author}` : SITE.title;
 const path = Astro.url.pathname;
 const canonical = new URL(path, Astro.site);
 const ogImage = new URL(image ?? SITE.photo, Astro.site);

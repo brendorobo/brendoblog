@@ -2,7 +2,7 @@
 export const SITE = {
   name: 'brendorobo',
   author: 'Brendon Roberts',
-  title: 'brendorobo // DFIR write-ups',
+  title: 'Brendon Roberts',
   description:
     'DFIR write-ups and blog by Brendon Roberts: forensics, GCFA prep, CTFs and the things I learn along the way.',
   github: 'https://github.com/brendorobo',
