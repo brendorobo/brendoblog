@@ -24,7 +24,7 @@ const moodText = NOW.mood.text || lastLog?.note;
     <div class="intro">
       <a class="me" href="/about/">
         <img src={SITE.avatar} alt="" width="44" height="44" />
-        <span><strong>Brendon Roberts</strong><span class="mono">cybersecurity analyst · DFIR</span></span>
+        <span><strong>Brendon Roberts</strong><span class="mono">cybersecurity analyst · DFIR · <span class="eagle">⚜ eagle scout</span></span></span>
       </a>
       <div class="eyebrow">// digital forensics · incident response · write-ups</div>
       <h1>Learning DFIR in public, <span class="hl">one artifact at a time.</span></h1>
@@ -100,6 +100,7 @@ const moodText = NOW.mood.text || lastLog?.note;
   .me > span { display: flex; flex-direction: column; line-height: 1.25; }
   .me strong { font-size: 0.92rem; }
   .me .mono { font-size: 0.7rem; color: var(--muted); }
+  .eagle { color: var(--amber); }
   .hl {
     background: linear-gradient(90deg, var(--accent), var(--accent-2));
     -webkit-background-clip: text; background-clip: text; color: transparent;

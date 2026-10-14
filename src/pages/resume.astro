@@ -73,7 +73,7 @@ const certNames: Record<string, string> = {
           <h2>Education</h2>
           <ul class="plain">
             {EDUCATION.map((e) => (
-              <li><strong>{e.name}</strong><br /><span class="muted">{e.org}{e.when && ` · ${e.when}`}</span></li>
+              <li><strong>{e.name === 'Eagle Scout' ? '⚜ Eagle Scout' : e.name}</strong><br /><span class="muted">{e.org}{e.when && ` · ${e.when}`}</span></li>
             ))}
           </ul>
         </div>

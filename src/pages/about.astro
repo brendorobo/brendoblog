@@ -26,7 +26,7 @@ const earned = CERTS.filter((c) => c.status === 'done');
         </p>
         <p>
           I hold a B.S. in Cybersecurity &amp; Information Assurance from WGU and an A.A.S. from Stark State, both
-          earned while working full-time. I’m also an Eagle Scout, which taught me
+          earned while working full-time. I’m also an <strong class="eagle">⚜ Eagle Scout</strong>, which taught me
           discipline, integrity and accountability. Those carry straight into how I approach an investigation:
           document everything and follow the evidence.
         </p>
@@ -62,6 +62,7 @@ const earned = CERTS.filter((c) => c.status === 'done');
         <div class="row"><span>focus</span><span>SOC · DFIR</span></div>
         <div class="row"><span>degree</span><span>B.S. Cybersecurity &amp; IA</span></div>
         <div class="row"><span>studying</span><span class="y">GCFA (FOR508)</span></div>
+        <div class="row"><span>honors</span><span class="eagle">⚜ Eagle Scout</span></div>
         <div class="row"><span>status</span><span class="g">● learning</span></div>
         <div class="certs">
           {earned.map((c) => <span class="cert">{c.name}</span>)}
@@ -100,6 +101,7 @@ const earned = CERTS.filter((c) => c.status === 'done');
   .row span:first-child { color: var(--dim); }
   .row span:last-child { text-align: right; }
   .y { color: var(--amber); } .g { color: var(--accent); }
+  .eagle { color: var(--amber); }
   .certs { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1rem; }
   .cert { font-size: 0.75rem; padding: 0.15rem 0.55rem; border: 1px solid var(--accent-dim); color: var(--accent); border-radius: 5px; }
   .links { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 1.2rem; }

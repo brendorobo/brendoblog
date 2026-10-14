@@ -29,6 +29,7 @@ const C = 2 * Math.PI * R;
         <div class="certs">
           {CERTS.map((c) => <span class:list={['cert mono', c.status]}>{c.name}{c.status !== 'done' && <small> {c.status}</small>}</span>)}
         </div>
+        <div class="honor mono" title="Scouting America (Boy Scouts of America)">⚜ Eagle Scout</div>
       </div>
 
       <div class="domains">
@@ -112,6 +113,11 @@ const C = 2 * Math.PI * R;
   .cert small { color: var(--dim); }
   .cert.in-progress { border-color: var(--amber); color: var(--amber); }
   .cert.done { border-color: var(--accent-dim); color: var(--accent); }
+  .honor {
+    font-size: 0.78rem; color: var(--amber); padding: 0.3rem 0.8rem; border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--amber) 45%, transparent);
+    background: color-mix(in srgb, var(--amber) 8%, transparent);
+  }
   .domains { display: grid; gap: 0.7rem; align-content: start; }
   .dom { padding: 0.9rem 1.1rem; }
   .dom summary {
