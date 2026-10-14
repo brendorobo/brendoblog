@@ -1,14 +1,14 @@
 ---
 import Base from '../layouts/Base.astro';
 import { CURRENT_CERT, DOMAINS, MILESTONES, CERTS, TOOLS } from '../data/journey';
-import { getPosts } from '../lib/content';
+import { STUDY_LOG, MOODS } from '../data/now';
 
-const overall = Math.round(DOMAINS.reduce((s, d) => s + d.progress, 0) / DOMAINS.length);
-const gcfaPosts = (await getPosts()).filter((p) => p.data.tags.includes('gcfa')).slice(0, 6);
+const tracked = DOMAINS.filter((d) => typeof d.progress === 'number');
+const overall = tracked.length ? Math.round(tracked.reduce((s, d) => s + (d.progress ?? 0), 0) / DOMAINS.length) : null;
 const R = 54;
 const C = 2 * Math.PI * R;
 ---
-<Base title="Journey" description={`Tracking my progress toward the ${CURRENT_CERT.name} and beyond.`}>
+<Base title="Journey" description={`Working toward the ${CURRENT_CERT.name}, plus the milestones that got me here.`}>
   <section class="wrap">
     <div class="top">
       <div class="eyebrow">// training log</div>
@@ -18,14 +18,16 @@ const C = 2 * Math.PI * R;
 
     <div class="overview">
       <div class="card ring reveal">
-        <svg viewBox="0 0 140 140" role="img" aria-label={`${overall}% overall`}>
+        <svg viewBox="0 0 140 140" role="img" aria-label={overall === null ? 'In progress' : `${overall}% overall`}>
           <circle cx="70" cy="70" r={R} class="bg" />
-          <circle cx="70" cy="70" r={R} class="fg" style={`--off:${C - (C * overall) / 100};--c:${C}`} stroke-dasharray={C} />
-          <text x="70" y="68" text-anchor="middle" class="big">{overall}%</text>
-          <text x="70" y="88" text-anchor="middle" class="small">overall</text>
+          {overall === null
+            ? <circle cx="70" cy="70" r={R} class="fg spin" stroke-dasharray={`${C * 0.22} ${C}`} />
+            : <circle cx="70" cy="70" r={R} class="fg" style={`--off:${C - (C * overall) / 100};--c:${C}`} stroke-dasharray={C} />}
+          <text x="70" y="68" text-anchor="middle" class="big">{overall === null ? CURRENT_CERT.name : `${overall}%`}</text>
+          <text x="70" y="88" text-anchor="middle" class="small">{overall === null ? 'in progress' : 'overall'}</text>
         </svg>
         <div class="certs">
-          {CERTS.map((c) => <span class:list={['cert mono', c.status]}>{c.name} <small>{c.status}</small></span>)}
+          {CERTS.map((c) => <span class:list={['cert mono', c.status]}>{c.name}{c.status !== 'done' && <small> {c.status}</small>}</span>)}
         </div>
       </div>
 
@@ -35,14 +37,33 @@ const C = 2 * Math.PI * R;
             <summary>
               <span class="mono id">{d.id}</span>
               <span class="name">{d.name}</span>
-              <span class="mono pct">{d.progress}%</span>
-              <span class="track"><span class="fill" style={`--p:${d.progress}%`}></span></span>
+              <span class="mono pct">{typeof d.progress === 'number' ? `${d.progress}%` : 'studying'}</span>
+              {typeof d.progress === 'number' && <span class="track"><span class="fill" style={`--p:${d.progress}%`}></span></span>}
             </summary>
             <p class="muted">{d.notes}</p>
           </details>
         ))}
+        <a class="mono cs-link" href="/cheatsheet/">→ the FOR508 cheat sheet I study from</a>
       </div>
     </div>
+
+    {STUDY_LOG.length > 0 && (
+      <>
+        <div class="section-head"><h2>study log</h2><span class="mono muted">how it's going</span></div>
+        <ol class="slog">
+          {STUDY_LOG.map((e) => (
+            <li class="card reveal">
+              <div class="slog-head mono">
+                <time>{e.date}</time>
+                <span class="mood">{MOODS[e.mood].emoji} {MOODS[e.mood].label}</span>
+              </div>
+              <strong>{e.topic}</strong>
+              <p class="muted">{e.note}</p>
+            </li>
+          ))}
+        </ol>
+      </>
+    )}
 
     <div class="cols">
       <div>
@@ -60,14 +81,6 @@ const C = 2 * Math.PI * R;
       <div>
         <div class="section-head"><h2>toolbox</h2></div>
         <div class="tools">{TOOLS.map((t) => <span class="tag">{t}</span>)}</div>
-        {gcfaPosts.length > 0 && (
-          <>
-            <div class="section-head"><h2>study notes</h2></div>
-            <ul class="notes">
-              {gcfaPosts.map((p) => <li><a href={`/blog/${p.id}/`}>{p.data.title}</a></li>)}
-            </ul>
-          </>
-        )}
       </div>
     </div>
   </section>
@@ -88,28 +101,37 @@ const C = 2 * Math.PI * R;
     stroke-dashoffset: var(--c); transition: stroke-dashoffset 1.6s cubic-bezier(.2,.8,.2,1);
     filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 50%, transparent));
   }
-  :global(.reveal.in) .fg { stroke-dashoffset: var(--off); }
-  .big { fill: #fff; font: 700 26px var(--mono); }
+  .fg.spin { stroke-dashoffset: 0; animation: spin 2.4s linear infinite; }
+  @keyframes spin { to { transform: rotate(270deg); } }
+  @media (prefers-reduced-motion: reduce) { .fg.spin { animation: none; } }
+  :global(.reveal.in) .fg:not(.spin) { stroke-dashoffset: var(--off); }
+  .big { fill: #fff; font: 700 24px var(--mono); }
   .small { fill: var(--muted); font: 11px var(--mono); }
   .certs { display: flex; flex-wrap: wrap; gap: 0.4rem; justify-content: center; }
   .cert { font-size: 0.78rem; padding: 0.2rem 0.6rem; border-radius: 6px; border: 1px solid var(--line-2); }
   .cert small { color: var(--dim); }
   .cert.in-progress { border-color: var(--amber); color: var(--amber); }
-  .cert.done { border-color: var(--accent); color: var(--accent); }
-  .domains { display: grid; gap: 0.7rem; }
+  .cert.done { border-color: var(--accent-dim); color: var(--accent); }
+  .domains { display: grid; gap: 0.7rem; align-content: start; }
   .dom { padding: 0.9rem 1.1rem; }
   .dom summary {
     list-style: none; cursor: pointer;
-    display: grid; grid-template-columns: 3.5em 1fr 3em; gap: 0.3rem 0.8rem; align-items: center;
+    display: grid; grid-template-columns: 3.5em 1fr auto; gap: 0.3rem 0.8rem; align-items: center;
   }
   .dom summary::-webkit-details-marker { display: none; }
   .dom[open] { border-color: var(--accent-dim); }
   .id { color: var(--dim); font-size: 0.75rem; }
-  .pct { text-align: right; color: var(--accent); font-size: 0.8rem; }
+  .pct { text-align: right; color: var(--accent); font-size: 0.75rem; }
   .track { grid-column: 1 / -1; height: 5px; background: var(--line); border-radius: 99px; overflow: hidden; }
   .fill { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent-dim), var(--accent)); transition: width 1.2s cubic-bezier(.2,.8,.2,1) 0.15s; }
   :global(.reveal.in) .fill { width: var(--p); }
   .dom p { margin: 0.8rem 0 0; font-size: 0.9rem; }
+  .cs-link { font-size: 0.8rem; margin-top: 0.3rem; }
+  .slog { list-style: none; margin: 0; padding: 0; display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
+  .slog li { padding: 1rem 1.1rem; }
+  .slog-head { display: flex; justify-content: space-between; font-size: 0.72rem; color: var(--dim); margin-bottom: 0.4rem; }
+  .mood { color: var(--amber); }
+  .slog p { margin: 0.3rem 0 0; font-size: 0.9rem; }
   .cols { display: grid; gap: 0 3rem; }
   @media (min-width: 860px) { .cols { grid-template-columns: 1.2fr 1fr; } }
   .log { list-style: none; margin: 0; padding: 0 0 0 1.2rem; border-left: 1px dashed var(--line-2); }
@@ -122,6 +144,4 @@ const C = 2 * Math.PI * R;
   .log p { margin: 0.2rem 0 0; font-size: 0.92rem; }
   .tools { display: flex; flex-wrap: wrap; gap: 0.45rem; }
   .tools .tag { font-size: 0.78rem; color: var(--text); }
-  .notes { padding-left: 1.2rem; }
-  .notes li { margin: 0.3rem 0; }
 </style>

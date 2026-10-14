@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css';
-import { SITE, NAV, THEME } from '../site';
+import { SITE, NAV, THEME, THEMES } from '../site';
 
 interface Props {
   title?: string;
@@ -29,9 +29,12 @@ const ogImage = new URL(image ?? SITE.photo, Astro.site);
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
     <meta property="og:image" content={ogImage} />
-    <meta name="theme-color" content={THEME === 'phosphor' ? '#070b0a' : '#07081a'} />
-    <script is:inline>
-      try { const t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch {}
+    <meta name="theme-color" content={THEMES[THEME].bg} />
+    <script is:inline define:vars={{ themes: THEMES }}>
+      try {
+        const t = localStorage.getItem('theme');
+        if (t && themes[t]) document.documentElement.dataset.theme = t;
+      } catch {}
     </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -46,7 +49,22 @@ const ogImage = new URL(image ?? SITE.photo, Astro.site);
         <a href="/" class="logo mono" aria-label="Home">
           <span class="prompt">root@</span><span class="host">brendorobo</span><span class="muted">:~#</span><span class="caret"></span>
         </a>
-        <button class="menu-btn mono" aria-expanded="false" aria-controls="site-nav">menu</button>
+        <div class="right">
+          <div class="theme-pick">
+            <button class="theme-btn mono" type="button" aria-haspopup="true" aria-expanded="false" aria-label="Change color theme" title="theme">
+              <span class="dot"></span>
+            </button>
+            <div class="theme-menu mono" role="menu" hidden>
+              <div class="tm-h">// theme</div>
+              {Object.entries(THEMES).map(([k, t]) => (
+                <button type="button" role="menuitemradio" data-set-theme={k}>
+                  <span class="sw" style={`background:${t.swatch}`}></span>{t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button class="menu-btn mono" aria-expanded="false" aria-controls="site-nav">menu</button>
+        </div>
         <nav id="site-nav" class="nav mono">
           {NAV.map((n) => (
             <a href={n.href} class:list={{ active: path.startsWith(n.href) }}>
@@ -87,7 +105,31 @@ const ogImage = new URL(image ?? SITE.photo, Astro.site);
         { threshold: 0.12 }
       );
       document.querySelectorAll('.reveal').forEach((el) => io.observe(el));
+
+      // Theme picker (the terminal's `theme` command fires the same event)
+      const tBtn = document.querySelector<HTMLButtonElement>('.theme-btn')!;
+      const tMenu = document.querySelector<HTMLElement>('.theme-menu')!;
+      const opts = tMenu.querySelectorAll<HTMLButtonElement>('[data-set-theme]');
+      const mark = () => opts.forEach((o) => o.setAttribute('aria-checked', String(o.dataset.setTheme === document.documentElement.dataset.theme)));
+      const close = () => { tMenu.hidden = true; tBtn.setAttribute('aria-expanded', 'false'); };
+      tBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        tMenu.hidden = !tMenu.hidden;
+        tBtn.setAttribute('aria-expanded', String(!tMenu.hidden));
+        mark();
+      });
+      opts.forEach((o) => o.addEventListener('click', () => {
+        const t = o.dataset.setTheme!;
+        document.documentElement.dataset.theme = t;
+        try { localStorage.setItem('theme', t); } catch {}
+        mark(); close();
+      }));
+      document.addEventListener('click', (e) => { if (!tMenu.contains(e.target as Node)) close(); });
+      document.addEventListener('keydown', (e) => { if (e.key === 'Escape') close(); });
     </script>
+    {SITE.cfAnalyticsToken && (
+      <script defer is:inline src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon={JSON.stringify({ token: SITE.cfAnalyticsToken })}></script>
+    )}
 
     <style>
       .site-header {
@@ -107,15 +149,37 @@ const ogImage = new URL(image ?? SITE.photo, Astro.site);
         animation: blink 1.1s steps(1) infinite;
       }
       @keyframes blink { 50% { opacity: 0; } }
-      .nav { display: flex; gap: 1.4rem; font-size: 0.9rem; }
+      .nav { display: flex; gap: 1.3rem; font-size: 0.88rem; margin-left: auto; order: 2; }
       .nav a { color: var(--muted); }
       .nav a:hover, .nav a.active { color: var(--accent); text-decoration: none; }
       .slash { color: var(--dim); }
+      .right { display: flex; align-items: center; gap: 0.6rem; order: 3; }
+      .theme-pick { position: relative; }
+      .theme-btn {
+        width: 32px; height: 32px; display: grid; place-items: center; cursor: pointer;
+        background: none; border: 1px solid var(--line-2); border-radius: 8px;
+      }
+      .theme-btn:hover { border-color: var(--accent-dim); }
+      .dot { width: 14px; height: 14px; border-radius: 50%; background: conic-gradient(var(--accent), var(--accent-2), var(--accent)); box-shadow: 0 0 10px var(--accent); }
+      .theme-menu {
+        position: absolute; right: 0; top: calc(100% + 8px); min-width: 160px; padding: 0.4rem;
+        background: var(--panel); border: 1px solid var(--line-2); border-radius: 10px;
+        box-shadow: 0 20px 40px -12px rgba(0, 0, 0, 0.6); z-index: 70;
+      }
+      .tm-h { font-size: 0.68rem; color: var(--dim); padding: 0.3rem 0.5rem; }
+      .theme-menu button {
+        display: flex; align-items: center; gap: 0.6rem; width: 100%; padding: 0.45rem 0.5rem;
+        font: inherit; font-size: 0.82rem; color: var(--text); background: none; border: 0; border-radius: 6px; cursor: pointer; text-align: left;
+      }
+      .theme-menu button:hover { background: var(--panel-2); }
+      .theme-menu button[aria-checked='true'] { color: var(--accent); }
+      .theme-menu button[aria-checked='true']::after { content: '●'; margin-left: auto; font-size: 0.6rem; }
+      .sw { width: 12px; height: 12px; border-radius: 50%; flex: none; }
       .menu-btn {
         display: none; background: none; border: 1px solid var(--line-2);
         color: var(--text); border-radius: 6px; padding: 0.3rem 0.7rem; cursor: pointer;
       }
-      @media (max-width: 640px) {
+      @media (max-width: 860px) {
         .logo .prompt { display: none; }
         .menu-btn { display: block; }
         .nav {

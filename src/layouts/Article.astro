@@ -1,5 +1,6 @@
 ---
 import Base from './Base.astro';
+import Comments from '../components/Comments.astro';
 
 interface Heading { depth: number; slug: string; text: string }
 interface Props {
@@ -43,7 +44,10 @@ const toc = headings.filter((h) => h.depth === 2 || h.depth === 3);
     </header>
     {cover && <img class="cover" src={cover} alt="" />}
     <div class="grid">
-      <div class="prose"><slot /></div>
+      <div class="prose-col">
+        <div class="prose"><slot /></div>
+        <Comments />
+      </div>
       {toc.length > 2 && (
         <nav class="toc mono" aria-label="On this page">
           <div class="toc-h">// contents</div>

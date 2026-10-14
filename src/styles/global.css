@@ -1,5 +1,5 @@
-/* Themes. Pick the default in src/site.ts (THEME). Visitors can also
-   switch live from the home-page terminal with `theme nebula|phosphor`. */
+/* Themes. Pick the default in src/site.ts (THEME). Visitors can switch with the
+   picker in the header or the terminal: `theme nebula|breach|abyss|phosphor`. */
 
 /* nebula: blue / purple */
 :root,
@@ -20,6 +20,46 @@
   --red: #ff5f8a;
   --cyan: #5fd0ff;
   --violet: #d58cff;
+}
+
+/* breach: red, hacker vibe */
+:root[data-theme='breach'] {
+  --bg: #0b0506;
+  --bg-2: #120809;
+  --panel: #190b0e;
+  --panel-2: #200e12;
+  --line: #301419;
+  --line-2: #4a1f28;
+  --text: #f1d9db;
+  --muted: #a9878b;
+  --dim: #6f4d53;
+  --accent: #ff3b4e;
+  --accent-dim: #a3202f;
+  --accent-2: #ff8a3d;
+  --amber: #ffb547;
+  --red: #ff7ab0;
+  --cyan: #6fd3ff;
+  --violet: #ff7ad9;
+}
+
+/* abyss: deep dark blue */
+:root[data-theme='abyss'] {
+  --bg: #030a16;
+  --bg-2: #061226;
+  --panel: #0a1a33;
+  --panel-2: #0e2140;
+  --line: #15294a;
+  --line-2: #22406e;
+  --text: #d2e3f7;
+  --muted: #7f9bbd;
+  --dim: #4a6587;
+  --accent: #3d9bff;
+  --accent-dim: #1f5fb3;
+  --accent-2: #4fe0ff;
+  --amber: #ffc266;
+  --red: #ff5f7a;
+  --cyan: #5fe0ff;
+  --violet: #9d8cff;
 }
 
 /* phosphor: the original terminal green */

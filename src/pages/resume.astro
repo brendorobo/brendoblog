@@ -1,0 +1,127 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE } from '../site';
+import { CERTS } from '../data/journey';
+import { SUMMARY, EXPERIENCE, EDUCATION, SKILLS } from '../data/resume';
+
+const certNames: Record<string, string> = {
+  GCFA: 'GIAC Certified Forensic Analyst (GCFA)',
+  SSCP: 'ISC2 Systems Security Certified Practitioner (SSCP)',
+  'CySA+': 'CompTIA Cybersecurity Analyst+ (CySA+)',
+  'PenTest+': 'CompTIA PenTest+',
+  'Security+': 'CompTIA Security+',
+  'Network+': 'CompTIA Network+',
+  'A+': 'CompTIA A+',
+  'Project+': 'CompTIA Project+',
+};
+---
+<Base title="Resume" description="Brendon Roberts: cybersecurity analyst, incident response and digital forensics.">
+  <section class="wrap page">
+    <div class="toolbar mono no-print">
+      <span class="eyebrow">// cat resume.txt</span>
+      <button type="button" class="btn" data-print>print / save as pdf</button>
+    </div>
+
+    <article class="card doc">
+      <header class="doc-head">
+        <div>
+          <h1>Brendon Roberts</h1>
+          <p class="mono role">Cybersecurity Analyst · Incident Response · Digital Forensics</p>
+        </div>
+        <div class="contact mono">
+          <a href={SITE.linkedin}>linkedin.com/in/brendon-roberts2023</a>
+          <a href="/">brendorobo.com</a>
+        </div>
+      </header>
+
+      <section>
+        <h2>Summary</h2>
+        <p>{SUMMARY}</p>
+      </section>
+
+      <section>
+        <h2>Experience</h2>
+        {EXPERIENCE.map((x) => (
+          <div class="job">
+            <div class="job-head">
+              <div><strong>{x.role}</strong><span class="muted"> · {x.org}, {x.where}</span></div>
+              <span class="mono when">{x.when}</span>
+            </div>
+            <ul>{x.points.map((p) => <li>{p}</li>)}</ul>
+          </div>
+        ))}
+      </section>
+
+      <section>
+        <h2>Skills</h2>
+        <div class="chips">{SKILLS.map((s) => <span class="tag">{s}</span>)}</div>
+      </section>
+
+      <section class="two">
+        <div>
+          <h2>Certifications</h2>
+          <ul class="plain">
+            {CERTS.map((c) => (
+              <li>
+                {certNames[c.name] ?? c.name}
+                {c.status === 'in-progress' && <span class="mono badge">in progress</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+        <div>
+          <h2>Education</h2>
+          <ul class="plain">
+            {EDUCATION.map((e) => (
+              <li><strong>{e.name}</strong><br /><span class="muted">{e.org}{e.when && ` · ${e.when}`}</span></li>
+            ))}
+          </ul>
+        </div>
+      </section>
+    </article>
+  </section>
+</Base>
+
+<script>
+  document.querySelector('[data-print]')?.addEventListener('click', () => print());
+</script>
+
+<style>
+  .page { padding-top: 2.5rem; max-width: 900px; }
+  .toolbar { display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+  .doc { padding: clamp(1.2rem, 4vw, 2.6rem); }
+  .doc-head { display: flex; justify-content: space-between; gap: 1rem 2rem; flex-wrap: wrap; border-bottom: 1px solid var(--line-2); padding-bottom: 1.2rem; }
+  h1 { margin: 0; font-size: clamp(1.8rem, 5vw, 2.4rem); }
+  .role { margin: 0.4rem 0 0; color: var(--accent); font-size: 0.82rem; }
+  .contact { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.8rem; text-align: right; }
+  @media (max-width: 600px) { .contact { text-align: left; } }
+  section h2 {
+    font-size: 0.82rem; font-family: var(--mono); text-transform: uppercase; letter-spacing: 0.12em;
+    color: var(--accent); margin: 1.8rem 0 0.7rem;
+  }
+  section p, li { color: #c3c8e0; font-size: 0.95rem; }
+  .job { margin-bottom: 1.2rem; }
+  .job-head { display: flex; justify-content: space-between; gap: 0.3rem 1rem; flex-wrap: wrap; align-items: baseline; }
+  .when { font-size: 0.75rem; color: var(--dim); white-space: nowrap; }
+  .job ul { margin: 0.4rem 0 0; padding-left: 1.1rem; }
+  .job li { margin: 0.2rem 0; }
+  .chips { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .chips .tag { color: var(--text); font-size: 0.76rem; white-space: normal; }
+  .two { display: grid; gap: 0 2rem; }
+  @media (min-width: 700px) { .two { grid-template-columns: 1fr 1fr; } }
+  .plain { list-style: none; padding: 0; margin: 0; }
+  .plain li { padding: 0.35rem 0; border-bottom: 1px dashed var(--line); }
+  .badge { margin-left: 0.5rem; font-size: 0.66rem; color: var(--amber); border: 1px solid currentColor; border-radius: 4px; padding: 0 0.35rem; }
+
+  @media print {
+    :global(.site-header), :global(.site-footer), :global(body::before), .no-print { display: none !important; }
+    :global(body) { background: #fff !important; color: #111 !important; }
+    .page { padding: 0; max-width: none; }
+    .doc { border: 0 !important; background: #fff !important; box-shadow: none !important; padding: 0; }
+    h1, strong { color: #000; }
+    section p, li, .muted, .when { color: #222 !important; }
+    .role, section h2 { color: #3b3fa8 !important; }
+    .chips .tag { color: #222; background: #fff; border-color: #bbb; }
+    a { color: #222; }
+  }
+</style>

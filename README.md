@@ -24,8 +24,11 @@ Remove `draft: true` when it's ready to publish.
 | Write-ups | `src/content/posts/*.mdx` |
 | LinkedIn posts (/posts) | `src/content/linkedin/*.md` |
 | Images | `public/images/posts/<slug>/` → `/images/posts/<slug>/file.png` |
-| GCFA progress, milestones, toolbox | `src/data/journey.ts` |
-| Name, links, color theme | `src/site.ts` (`THEME = 'nebula'` or `'phosphor'`) |
+| GCFA status, milestones, certs, toolbox | `src/data/journey.ts` |
+| "Currently" box + study log (mood) | `src/data/now.ts` |
+| Resume (/resume + About) | `src/data/resume.ts` |
+| Cheat sheet (/cheatsheet) | `src/data/cheatsheet.ts` |
+| Name, links, default theme, comments, analytics | `src/site.ts` |
 
 ### Components you can drop into any post
 
@@ -38,6 +41,24 @@ Remove `draft: true` when it's ready to publish.
 ```
 
 Need something custom for a project? Add an `.astro` component in `src/components/mdx/` and import it in the post.
+
+## Themes
+
+`nebula` (blue/purple), `breach` (red), `abyss` (dark blue), `phosphor` (green). Set the default with
+`THEME` in `src/site.ts`. Visitors can switch from the header picker or the terminal (`theme breach`).
+
+## Comments (giscus)
+
+1. Repo Settings → General → Features → tick **Discussions**.
+2. Install the giscus app on the repo: https://github.com/apps/giscus
+3. Create a Discussions category named **Comments** (type: Announcement).
+4. Go to https://giscus.app, enter `brendorobo/brendoblog`, pick the Comments category, and copy
+   `data-category-id` into `SITE.giscus.categoryId` in `src/site.ts`.
+
+## Analytics (Cloudflare Web Analytics)
+
+Cloudflare dashboard → Analytics & Logs → Web Analytics → Add a site → `brendorobo.com` → copy the token
+from the JS snippet into `SITE.cfAnalyticsToken` in `src/site.ts`. No cookies, no banner needed.
 
 ## Deploy
 

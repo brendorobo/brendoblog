@@ -1,0 +1,207 @@
+---
+import Base from '../layouts/Base.astro';
+import { CHEATSHEET, CHEATSHEET_SOURCE } from '../data/cheatsheet';
+---
+<Base title="Cheat sheet" description="GCFA / SANS FOR508 core concepts: IR process, credential theft, evidence of execution, lateral movement, Event IDs, memory, timelines, NTFS.">
+  <section class="wrap cs">
+    <header class="top">
+      <div class="eyebrow">// exhibit B · giac gcfa · sans for508</div>
+      <h1>DFIR cheat sheet</h1>
+      <p class="muted lede">
+        The GCFA concepts that come up most: the IR process, threat intel, evidence of execution, lateral movement,
+        memory, timelines and NTFS anti-forensics. Search it like an index.
+      </p>
+    </header>
+
+    <div class="controls">
+      <div class="search-wrap mono">
+        <span class="ps">grep -i</span>
+        <input type="search" data-q placeholder="4624, prefetch, kerberoast, malfind…" aria-label="Search the cheat sheet" />
+        <kbd>/</kbd>
+      </div>
+      <span class="mono count" data-count aria-live="polite"></span>
+    </div>
+
+    <nav class="index mono" aria-label="Sections">
+      {CHEATSHEET.map((s) => <a href={`#${s.id}`} data-jump={s.id}><span>{s.num}</span>{s.title}</a>)}
+    </nav>
+
+    {CHEATSHEET.map((s) => (
+      <section class="sec" id={s.id} data-sec>
+        <h2><span class="num mono">{s.num}</span>{s.title}</h2>
+        {s.blocks.map((b) => (
+          <div class={`blk ${b.type}`}>
+            {'title' in b && b.title && <h3>{b.title}</h3>}
+
+            {b.type === 'steps' && (
+              <ol class="steps">
+                {b.items.map((it, i) => (
+                  <li class:list={['u', { hot: it.flag }]}>
+                    <span class="n mono">{i + 1}</span>
+                    <div class="st">
+                      <strong>{it.title}</strong>
+                      {it.sub && <span class="sub">{it.sub}</span>}
+                      {it.flag && <span class="flag mono">{it.flag}</span>}
+                    </div>
+                    <p set:html={it.body} />
+                  </li>
+                ))}
+              </ol>
+            )}
+
+            {b.type === 'table' && (
+              <div class="tbl">
+                <table>
+                  <thead><tr>{b.head.map((h) => <th set:html={h} />)}</tr></thead>
+                  <tbody>{b.rows.map((r) => <tr class="u">{r.map((c, i) => i === 0 ? <th scope="row" set:html={c} /> : <td set:html={c} />)}</tr>)}</tbody>
+                </table>
+              </div>
+            )}
+
+            {b.type === 'cards' && (
+              <div class="cards">
+                {b.items.map((c) => <div class="ccard u"><strong set:html={c.title} /><p set:html={c.body} /></div>)}
+              </div>
+            )}
+
+            {b.type === 'kv' && (
+              <dl class="kv">
+                {b.items.map(([k, v]) => <div class="u"><dt class="mono" set:html={k} /><dd set:html={v} /></div>)}
+              </dl>
+            )}
+
+            {b.type === 'list' && (
+              b.ordered
+                ? <ol class="lst">{b.items.map((t) => <li class="u" set:html={t} />)}</ol>
+                : <ul class="lst">{b.items.map((t) => <li class="u" set:html={t} />)}</ul>
+            )}
+
+            {b.type === 'note' && <p class="note u" set:html={b.text} />}
+            {'note' in b && b.note && b.type !== 'note' && <p class="note" set:html={b.note} />}
+          </div>
+        ))}
+      </section>
+    ))}
+
+    <p class="empty mono muted" data-empty hidden>no hits. try a shorter term.</p>
+    <p class="source muted">{CHEATSHEET_SOURCE}</p>
+  </section>
+</Base>
+
+<script>
+  const q = document.querySelector<HTMLInputElement>('[data-q]')!;
+  const count = document.querySelector<HTMLElement>('[data-count]')!;
+  const empty = document.querySelector<HTMLElement>('[data-empty]')!;
+  const secs = [...document.querySelectorAll<HTMLElement>('[data-sec]')];
+  const jumps = new Map([...document.querySelectorAll<HTMLAnchorElement>('[data-jump]')].map((a) => [a.dataset.jump!, a]));
+
+  const apply = () => {
+    const term = q.value.trim().toLowerCase();
+    let hits = 0;
+    secs.forEach((sec) => {
+      const units = [...sec.querySelectorAll<HTMLElement>('.u')];
+      const titleHit = !!term && sec.querySelector('h2')!.textContent!.toLowerCase().includes(term);
+      let n = 0;
+      units.forEach((u) => {
+        const ok = !term || titleHit || u.textContent!.toLowerCase().includes(term);
+        u.hidden = !ok;
+        if (ok) n++;
+      });
+      // hide blocks that ended up empty
+      sec.querySelectorAll<HTMLElement>('.blk').forEach((b) => {
+        const us = b.querySelectorAll('.u');
+        b.hidden = !!term && us.length > 0 && [...us].every((u) => (u as HTMLElement).hidden);
+      });
+      sec.hidden = !!term && n === 0;
+      jumps.get(sec.id)?.classList.toggle('off', sec.hidden);
+      if (term) hits += titleHit ? 0 : n;
+    });
+    count.textContent = term ? `${hits} match${hits === 1 ? '' : 'es'}` : '';
+    empty.hidden = !term || secs.some((s) => !s.hidden);
+  };
+  q.addEventListener('input', apply);
+  addEventListener('keydown', (e) => {
+    if (e.key === '/' && document.activeElement !== q) { e.preventDefault(); q.focus(); }
+    if (e.key === 'Escape' && document.activeElement === q) { q.value = ''; apply(); }
+  });
+  // ?q=4624 deep-links a search (used by the terminal's `eventid` command)
+  const pre = new URLSearchParams(location.search).get('q');
+  if (pre) { q.value = pre; apply(); }
+
+  // highlight the section in view
+  const io = new IntersectionObserver((es) => es.forEach((e) => {
+    if (e.isIntersecting) { jumps.forEach((a) => a.classList.remove('on')); jumps.get(e.target.id)?.classList.add('on'); }
+  }), { rootMargin: '-20% 0px -70% 0px' });
+  secs.forEach((s) => io.observe(s));
+</script>
+
+<style>
+  .cs { padding-top: 2.8rem; }
+  h1 { margin: 0.6rem 0 0.4rem; }
+  .lede { max-width: 70ch; }
+  .controls { position: sticky; top: 60px; z-index: 20; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; padding: 0.9rem 0; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); }
+  .search-wrap {
+    flex: 1 1 320px; max-width: 560px; display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.55rem 0.8rem; border: 1px solid var(--line-2); border-radius: 10px; background: var(--bg-2);
+  }
+  .search-wrap:focus-within { border-color: var(--accent-dim); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent); }
+  .ps { color: var(--accent); font-size: 0.8rem; white-space: nowrap; }
+  .search-wrap input { flex: 1; min-width: 0; background: none; border: 0; outline: none; color: var(--text); font: inherit; font-size: 0.88rem; }
+  kbd { font-size: 0.7rem; color: var(--dim); border: 1px solid var(--line-2); border-radius: 4px; padding: 0 0.35rem; }
+  .count { font-size: 0.78rem; color: var(--muted); }
+  .index { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.4rem 0 1rem; font-size: 0.75rem; }
+  .index a { color: var(--muted); border: 1px solid var(--line-2); border-radius: 999px; padding: 0.2rem 0.65rem; }
+  .index a span { color: var(--dim); margin-right: 0.4rem; }
+  .index a:hover, .index a.on { color: var(--accent); border-color: var(--accent-dim); text-decoration: none; }
+  .index a.off { opacity: 0.3; }
+
+  .sec { scroll-margin-top: 130px; padding-top: 1.2rem; }
+  .sec h2 { display: flex; align-items: baseline; gap: 0.7rem; font-size: 1.45rem; padding-bottom: 0.6rem; border-bottom: 1px solid var(--line-2); margin: 1.6rem 0 1.2rem; }
+  .num { font-size: 0.85rem; color: var(--accent); }
+  h3 { font-size: 1rem; margin: 1.6rem 0 0.7rem; color: var(--text); }
+  .blk { margin-bottom: 1.2rem; }
+  :global(.cs code) { white-space: normal; word-break: break-word; }
+
+  .steps { list-style: none; margin: 0; padding: 0; border-left: 2px solid var(--line-2); }
+  .steps li { position: relative; display: grid; grid-template-columns: minmax(0, 15rem) 1fr; gap: 0.4rem 1.5rem; padding: 0.9rem 0 0.9rem 2.4rem; border-bottom: 1px dashed var(--line); }
+  .steps .n { position: absolute; left: -0.85rem; top: 0.9rem; width: 1.6rem; height: 1.6rem; border-radius: 50%; display: grid; place-items: center; font-size: 0.75rem; background: var(--bg); border: 1px solid var(--accent-dim); color: var(--accent); }
+  .steps .hot { background: color-mix(in srgb, var(--accent) 7%, transparent); }
+  .steps .hot .n { background: var(--accent); color: #fff; }
+  .st { display: flex; flex-direction: column; gap: 0.15rem; }
+  .sub { font-size: 0.8rem; color: var(--muted); }
+  .flag { align-self: start; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: #fff; background: var(--accent-dim); padding: 0.1rem 0.45rem; border-radius: 4px; margin-top: 0.2rem; }
+  .steps p { margin: 0; color: #c3c8e0; font-size: 0.93rem; }
+  @media (max-width: 700px) { .steps li { grid-template-columns: 1fr; } }
+
+  .tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
+  table { width: 100%; border-collapse: collapse; font-size: 0.88rem; min-width: 520px; }
+  th, td { text-align: left; vertical-align: top; padding: 0.6rem 0.8rem; border-bottom: 1px solid var(--line); }
+  thead th { background: var(--panel); font-family: var(--mono); font-size: 0.72rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.06em; }
+  tbody th { color: var(--text); font-weight: 600; white-space: nowrap; }
+  tbody tr:last-child > * { border-bottom: 0; }
+  tbody tr:hover { background: var(--panel); }
+  td { color: #c3c8e0; }
+
+  .cards { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
+  .ccard { border: 1px solid var(--line); border-radius: var(--radius); padding: 0.9rem 1rem; background: var(--bg-2); }
+  .ccard p { margin: 0.35rem 0 0; font-size: 0.9rem; color: #c3c8e0; }
+
+  .kv { margin: 0; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
+  .kv div { display: grid; grid-template-columns: minmax(7rem, 14rem) 1fr; gap: 1rem; padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--line); font-size: 0.9rem; }
+  .kv div:last-child { border-bottom: 0; }
+  .kv dt { color: var(--accent); font-size: 0.82rem; }
+  .kv dd { margin: 0; color: #c3c8e0; }
+  @media (max-width: 560px) { .kv div { grid-template-columns: 1fr; gap: 0.2rem; } }
+
+  .lst { padding-left: 1.3rem; margin: 0; }
+  .lst li { margin: 0.35rem 0; color: #c3c8e0; }
+  .note { margin: 0.7rem 0 0; padding: 0.6rem 0.9rem; border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); border-radius: 0 6px 6px 0; font-size: 0.88rem; color: var(--text); }
+  .source { font-size: 0.8rem; margin-top: 3rem; border-top: 1px dashed var(--line-2); padding-top: 1rem; }
+  .empty { margin-top: 2rem; }
+  [hidden] { display: none !important; }
+
+  @media print {
+    .controls, .index { display: none; }
+    :global(.site-header), :global(.site-footer) { display: none; }
+  }
+</style>

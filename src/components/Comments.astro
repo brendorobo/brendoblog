@@ -1,0 +1,51 @@
+---
+// giscus comments, backed by GitHub Discussions on the site repo.
+// The theme follows the site theme (re-sent to the iframe when it changes).
+import { SITE } from '../site';
+const g = SITE.giscus;
+const enabled = !!(g.repoId && g.categoryId);
+---
+{enabled ? (
+  <section class="comments" aria-label="Comments">
+    <h2 class="mono">// comments</h2>
+    <p class="muted hint">Sign in with GitHub to comment or react.</p>
+    <div class="giscus-box" data-giscus
+      data-repo={g.repo} data-repo-id={g.repoId} data-category={g.category} data-category-id={g.categoryId}></div>
+  </section>
+) : import.meta.env.DEV && (
+  <p class="mono muted off">[comments are off: set SITE.giscus.categoryId in src/site.ts]</p>
+)}
+
+<script>
+  const box = document.querySelector<HTMLElement>('[data-giscus]');
+  if (box) {
+    const theme = () => {
+      // giscus has no per-site theme here, so pick the closest built-in dark theme
+      return document.documentElement.dataset.theme === 'phosphor' ? 'dark_dimmed' : 'transparent_dark';
+    };
+    const s = document.createElement('script');
+    s.src = 'https://giscus.app/client.js';
+    s.async = true;
+    s.crossOrigin = 'anonymous';
+    const attrs: Record<string, string> = {
+      'data-repo': box.dataset.repo!, 'data-repo-id': box.dataset.repoId!,
+      'data-category': box.dataset.category!, 'data-category-id': box.dataset.categoryId!,
+      'data-mapping': 'pathname', 'data-strict': '1', 'data-reactions-enabled': '1',
+      'data-emit-metadata': '0', 'data-input-position': 'top', 'data-theme': theme(),
+      'data-lang': 'en', 'data-loading': 'lazy',
+    };
+    Object.entries(attrs).forEach(([k, v]) => s.setAttribute(k, v));
+    box.appendChild(s);
+    new MutationObserver(() => {
+      const f = document.querySelector<HTMLIFrameElement>('iframe.giscus-frame');
+      f?.contentWindow?.postMessage({ giscus: { setConfig: { theme: theme() } } }, 'https://giscus.app');
+    }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+  }
+</script>
+
+<style>
+  .comments { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px dashed var(--line-2); max-width: 72ch; }
+  h2 { font-size: 1rem; color: var(--accent); margin: 0 0 0.3rem; }
+  .hint { font-size: 0.85rem; margin: 0 0 1.2rem; }
+  .off { margin-top: 3rem; font-size: 0.75rem; }
+</style>

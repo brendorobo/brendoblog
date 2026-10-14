@@ -4,7 +4,8 @@ import TerminalHero from '../components/TerminalHero.astro';
 import PostCard from '../components/PostCard.astro';
 import LinkedInCard from '../components/LinkedInCard.astro';
 import { getPosts, getLinkedIn, readingTime } from '../lib/content';
-import { CURRENT_CERT, DOMAINS } from '../data/journey';
+import { CURRENT_CERT } from '../data/journey';
+import { NOW, STUDY_LOG, MOODS } from '../data/now';
 import { SITE } from '../site';
 
 const posts = await getPosts();
@@ -13,7 +14,10 @@ const items = [
   ...posts.map((p) => ({ title: p.data.title, kind: 'write-up' as const, href: `/blog/${p.id}/` })),
   ...updates.map((u) => ({ title: u.data.title, kind: 'post' as const, href: `/posts/#${u.id}` })),
 ];
-const overall = Math.round(DOMAINS.reduce((s, d) => s + d.progress, 0) / DOMAINS.length);
+const lastLog = STUDY_LOG[0];
+const moodLevel = (NOW.mood.level || lastLog?.mood) as keyof typeof MOODS | undefined;
+const mood = moodLevel ? MOODS[moodLevel] : undefined;
+const moodText = NOW.mood.text || lastLog?.note;
 ---
 <Base>
   <section class="wrap hero">
@@ -30,13 +34,29 @@ const overall = Math.round(DOMAINS.reduce((s, d) => s + d.progress, 0) / DOMAINS
       </p>
       <div class="cta">
         <a class="btn" href="/blog/">read the write-ups →</a>
-        <a class="btn ghost" href="/journey/">gcfa progress: {overall}%</a>
+        <a class="btn ghost" href="/resume/">resume</a>
       </div>
     </div>
     <TerminalHero items={items} />
   </section>
 
   <section class="wrap">
+    <div class="card now reveal">
+      <div class="now-head mono">
+        <span><span class="pulse"></span>currently</span>
+        <span class="muted">updated {NOW.updated}</span>
+      </div>
+      <dl>
+        {NOW.items.map((i) => (
+          <div><dt class="mono">{i.k}</dt><dd>{i.v}</dd></div>
+        ))}
+        {mood && (
+          <div><dt class="mono">feeling</dt><dd><span class="mood">{mood.emoji} {mood.label}</span>{moodText && <span class="muted"> · {moodText}</span>}</dd></div>
+        )}
+      </dl>
+      <a class="mono more" href="/journey/">{CURRENT_CERT.name} journey →</a>
+    </div>
+
     <div class="section-head">
       <h2>latest write-ups</h2>
       <a class="mono" href="/blog/">all write-ups →</a>
@@ -64,26 +84,6 @@ const overall = Math.round(DOMAINS.reduce((s, d) => s + d.progress, 0) / DOMAINS
       {updates.slice(0, 3).map((u) => <LinkedInCard item={u} compact />)}
     </div>
 
-    <div class="section-head">
-      <h2>currently studying</h2>
-      <a class="mono" href="/journey/">full journey →</a>
-    </div>
-    <a href="/journey/" class="card study reveal">
-      <div class="mono study-top">
-        <span><span class="y">{CURRENT_CERT.name}</span> · {CURRENT_CERT.course}</span>
-        <span class="muted">{overall}% overall</span>
-      </div>
-      <div class="bars">
-        {DOMAINS.map((d) => (
-          <div class="bar">
-            <span class="mono id">{d.id}</span>
-            <span class="name">{d.name}</span>
-            <span class="track"><span class="fill" style={`--p:${d.progress}%`}></span></span>
-            <span class="mono pct">{d.progress}%</span>
-          </div>
-        ))}
-      </div>
-    </a>
   </section>
 </Base>
 
@@ -109,19 +109,15 @@ const overall = Math.round(DOMAINS.reduce((s, d) => s + d.progress, 0) / DOMAINS
   .cta { display: flex; gap: 0.8rem; flex-wrap: wrap; margin-top: 1.5rem; }
   .btn.ghost { border-color: var(--line-2); color: var(--text); background: transparent; }
   .grid { display: grid; gap: 1.2rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 300px), 1fr)); }
-  .study { padding: 1.3rem 1.4rem; }
-  .study-top { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 0.5rem; font-size: 0.8rem; margin-bottom: 1rem; }
-  .y { color: var(--amber); }
-  .bars { display: grid; gap: 0.7rem; }
-  .bar { display: grid; grid-template-columns: 3.5em minmax(0, 15em) 1fr 3em; gap: 0.8rem; align-items: center; font-size: 0.88rem; }
-  .id { color: var(--dim); font-size: 0.75rem; }
-  .track { height: 6px; background: var(--line); border-radius: 99px; overflow: hidden; }
-  .fill { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--accent-dim), var(--accent)); transition: width 1.2s cubic-bezier(.2,.8,.2,1) 0.2s; }
-  :global(.reveal.in) .fill { width: var(--p); }
-  .pct { text-align: right; color: var(--muted); font-size: 0.75rem; }
-  @media (max-width: 600px) {
-    .bar { grid-template-columns: 3.2em 1fr 2.8em; }
-    .name { grid-column: 2 / 4; }
-    .track { grid-column: 1 / 3; }
-  }
+  .now { margin-top: 2.5rem; padding: 1.1rem 1.3rem; display: grid; gap: 0.6rem; }
+  .now-head { display: flex; justify-content: space-between; gap: 1rem; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.1em; color: var(--accent); }
+  .pulse { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--accent); margin-right: 0.5rem; box-shadow: 0 0 0 0 var(--accent); animation: pulse 2s infinite; }
+  @keyframes pulse { 70% { box-shadow: 0 0 0 8px transparent; } 100% { box-shadow: 0 0 0 0 transparent; } }
+  .now dl { margin: 0; display: grid; gap: 0.35rem; }
+  .now dl div { display: grid; grid-template-columns: 6.5rem 1fr; gap: 1rem; align-items: baseline; }
+  .now dt { font-size: 0.78rem; color: var(--dim); }
+  .now dd { margin: 0; font-size: 1.02rem; }
+  .mood { color: var(--amber); }
+  .more { font-size: 0.78rem; justify-self: start; }
+  @media (prefers-reduced-motion: reduce) { .pulse { animation: none; } }
 </style>

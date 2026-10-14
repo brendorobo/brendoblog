@@ -4,6 +4,9 @@
 interface Item { title: string; kind: 'write-up' | 'post'; href: string }
 interface Props { items: Item[] }
 const { items } = Astro.props;
+import { EVENT_IDS } from '../data/cheatsheet';
+import { THEMES } from '../site';
+const extra = { eventIds: EVENT_IDS, themes: Object.keys(THEMES) };
 ---
 <div class="term card" data-term>
   <div class="term-top">
@@ -16,6 +19,7 @@ const { items } = Astro.props;
     <input id="term-input" data-input spellcheck="false" aria-label="Terminal command" placeholder="type 'help'" />
   </form>
   <script type="application/json" data-items set:html={JSON.stringify(items)} />
+  <script type="application/json" data-extra set:html={JSON.stringify(extra)} />
 </div>
 
 <script>
@@ -26,6 +30,7 @@ const { items } = Astro.props;
     const form = root.querySelector<HTMLFormElement>('[data-form]')!;
     const input = root.querySelector<HTMLInputElement>('[data-input]')!;
     const items: Item[] = JSON.parse(root.querySelector('[data-items]')!.textContent || '[]');
+    const extra: { eventIds: Record<string, string>; themes: string[] } = JSON.parse(root.querySelector('[data-extra]')!.textContent || '{}');
     const history: string[] = [];
     let hIdx = 0;
 
@@ -40,7 +45,7 @@ const { items } = Astro.props;
     const url = (i: Item) => i.href;
 
     const routes: Record<string, string> = {
-      blog: '/blog/', 'write-ups': '/blog/', posts: '/posts/', journey: '/journey/', about: '/about/', whoami: '/about/', home: '/',
+      blog: '/blog/', 'write-ups': '/blog/', posts: '/posts/', cheatsheet: '/cheatsheet/', resume: '/resume/', journey: '/journey/', about: '/about/', whoami: '/about/', home: '/',
     };
 
     const cmds: Record<string, (args: string[]) => void> = {
@@ -50,8 +55,11 @@ const { items } = Astro.props;
           ['whoami', 'who runs this box'],
           ['ls [write-ups|posts]', 'list case files'],
           ['open &lt;n&gt;', 'open item n from the last ls'],
+          ['resume', 'open my resume'],
+          ['cheatsheet', 'open the GCFA cheat sheet'],
+          ['eventid &lt;id&gt;', 'look up a Windows Event ID'],
           ['cd &lt;blog|posts|journey|about&gt;', 'navigate'],
-          ['theme &lt;nebula|phosphor&gt;', 'swap color scheme'],
+          ['theme [name]', 'list or switch color themes'],
           ['gcfa', 'current cert-prep status'],
           ['grep &lt;term&gt;', 'search titles'],
           ['triage', 'run a (fake) live response'],
@@ -113,9 +121,29 @@ const { items } = Astro.props;
       sudo() { line('<span class="r">analyst is not in the sudoers file. This incident will be reported.</span>'); },
       rm() { line('<span class="r">rm: refusing — evidence must stay write-protected.</span>'); },
       date() { line(new Date().toString()); },
+      resume() {
+        line('<span class="m">cat resume.txt | less ...</span>');
+        setTimeout(() => (location.href = '/resume/'), 350);
+      },
+      cheatsheet() {
+        line('<span class="m">opening exhibit B ...</span>');
+        setTimeout(() => (location.href = '/cheatsheet/'), 350);
+      },
+      eventid(args) {
+        const id = (args[0] || '').trim();
+        if (!id) return line('<span class="r">usage: eventid 4624</span>');
+        const hit = extra.eventIds[id];
+        if (!hit) return line(`<span class="m">no entry for ${esc(id)}.</span> <a href="/cheatsheet/?q=${encodeURIComponent(id)}">search the cheat sheet</a>`);
+        line(`<span class="y">${esc(id)}</span>  ${esc(hit)}`);
+        line(`<span class="m">more:</span> <a href="/cheatsheet/?q=${encodeURIComponent(id)}">/cheatsheet?q=${esc(id)}</a>`);
+      },
       theme(args) {
         const t = (args[0] || '').toLowerCase();
-        if (t !== 'nebula' && t !== 'phosphor') return line('<span class="r">usage: theme nebula|phosphor</span>');
+        const cur = document.documentElement.dataset.theme;
+        if (!extra.themes.includes(t)) {
+          extra.themes.forEach((n) => line(`  ${n === cur ? '<span class="g">*</span>' : ' '} ${n}`));
+          return line('<span class="m">usage: theme &lt;name&gt;</span>');
+        }
         document.documentElement.dataset.theme = t;
         try { localStorage.setItem('theme', t); } catch {}
         line(`<span class="g">theme set to ${t}</span>`);

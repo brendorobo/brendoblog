@@ -2,33 +2,8 @@
 import Base from '../layouts/Base.astro';
 import { SITE } from '../site';
 import { CERTS } from '../data/journey';
+import { EXPERIENCE } from '../data/resume';
 
-const EXPERIENCE = [
-  {
-    role: 'Cyber Security Analyst',
-    org: 'FirstEnergy',
-    when: 'Aug 2024 – present',
-    points: [
-      'Triage and investigate security alerts across the security tool stack',
-      'Investigate phishing, malware and suspicious endpoint activity',
-      'Support incident response efforts and forensics',
-      'Use SOAR automation to manage and respond to cases',
-      'Document investigations and collaborate on threat intelligence',
-    ],
-  },
-  {
-    role: 'Information Technology Specialist',
-    org: 'Clampco Products',
-    when: 'Jan 2023 – Aug 2024',
-    points: ['IT apprenticeship alongside college', 'Day-to-day support and maintenance of systems'],
-  },
-  {
-    role: 'Seasonal Sales Associate',
-    org: 'Best Buy',
-    when: 'Nov 2022 – Jan 2023',
-    points: ['Helped customers pick networking gear and solved their tech problems'],
-  },
-];
 const earned = CERTS.filter((c) => c.status === 'done');
 ---
 <Base title="whoami" description="Brendon Roberts: cybersecurity analyst focused on SOC operations and DFIR.">
@@ -39,9 +14,10 @@ const earned = CERTS.filter((c) => c.status === 'done');
     <div class="grid">
       <div class="prose">
         <p>
-          I’m a <strong>cybersecurity analyst</strong> working in SOC operations and incident response. Day to day
-          that means triaging alerts, digging into phishing, malware and suspicious endpoint activity, and writing up
-          what I find. The part I enjoy most is the forensics: figuring out what <em>actually</em> happened on a machine.
+          I’m a <strong>cybersecurity analyst</strong> at a regional electric utility, with over two years in incident
+          response, digital forensics and security operations. Day to day that means investigating incidents across
+          endpoints, identities, email and cloud, digging into phishing and malware, hunting for what slipped past
+          detections, and writing it all up. The part I enjoy most is the forensics: figuring out what <em>actually</em> happened on a machine.
         </p>
         <p>
           That’s why I’m going deeper into <strong>DFIR</strong> and working toward the <strong>GCFA</strong>{' '}
@@ -49,12 +25,14 @@ const earned = CERTS.filter((c) => c.status === 'done');
           testing, and the “oh, <em>that’s</em> how it works” moments.
         </p>
         <p>
-          I hold a B.S. in Cybersecurity &amp; Information Assurance. I’m also an Eagle Scout, which taught me
+          I hold a B.S. in Cybersecurity &amp; Information Assurance from WGU and an A.A.S. from Stark State, both
+          earned while working full-time. I’m also an Eagle Scout, which taught me
           discipline, integrity and accountability. Those carry straight into how I approach an investigation:
           document everything and follow the evidence.
         </p>
 
         <h2>Experience</h2>
+        <p class="muted small">Highlights below. The full version is on my <a href="/resume/">resume page</a>.</p>
         <ol class="xp">
           {EXPERIENCE.map((x) => (
             <li class="reveal">
@@ -62,7 +40,7 @@ const earned = CERTS.filter((c) => c.status === 'done');
                 <strong>{x.role}</strong> <span class="muted">· {x.org}</span>
                 <span class="mono when">{x.when}</span>
               </div>
-              <ul>{x.points.map((p) => <li>{p}</li>)}</ul>
+              <ul>{x.points.slice(0, 3).map((p) => <li>{p}</li>)}</ul>
             </li>
           ))}
         </ol>
@@ -89,6 +67,7 @@ const earned = CERTS.filter((c) => c.status === 'done');
           {earned.map((c) => <span class="cert">{c.name}</span>)}
         </div>
         <div class="links">
+          <a class="btn" href="/resume/">resume</a>
           <a class="btn" href={SITE.github}>github</a>
           {SITE.linkedin && <a class="btn" href={SITE.linkedin}>linkedin</a>}
           {SITE.email && <a class="btn" href={`mailto:${SITE.email}`}>email</a>}
