@@ -1,0 +1,50 @@
+---
+import Base from '../layouts/Base.astro';
+import LinkedInCard from '../components/LinkedInCard.astro';
+import { getLinkedIn } from '../lib/content';
+import { SITE } from '../site';
+
+const items = await getLinkedIn();
+const kinds = [...new Set(items.map((i) => i.data.kind))];
+---
+<Base title="Posts" description="Milestones, certifications and CTFs, mirrored from LinkedIn.">
+  <section class="wrap">
+    <div class="top">
+      <div class="eyebrow">// activity log</div>
+      <h1>Posts</h1>
+      <p class="muted">
+        Milestones, certs and CTFs I’ve shared on <a href={SITE.linkedin} target="_blank" rel="noopener">LinkedIn</a>.
+        The long-form stuff lives in <a href="/blog/">write-ups</a>.
+      </p>
+      <div class="kinds mono" role="group" aria-label="Filter posts">
+        <button type="button" class="on" data-k="*">all</button>
+        {kinds.map((k) => <button type="button" data-k={k}>{k}</button>)}
+      </div>
+    </div>
+    <div class="feed">
+      {items.map((item) => <LinkedInCard item={item} />)}
+    </div>
+  </section>
+</Base>
+
+<script>
+  const btns = document.querySelectorAll<HTMLButtonElement>('.kinds button');
+  const cards = document.querySelectorAll<HTMLElement>('.feed [data-kind]');
+  btns.forEach((b) => b.addEventListener('click', () => {
+    btns.forEach((x) => x.classList.toggle('on', x === b));
+    cards.forEach((c) => (c.hidden = !(b.dataset.k === '*' || c.dataset.kind === b.dataset.k)));
+  }));
+</script>
+
+<style>
+  .top { padding: 3rem 0 2rem; }
+  h1 { margin: 0.6rem 0 0.4rem; }
+  .kinds { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 1.4rem; }
+  .kinds button {
+    font: inherit; font-size: 0.76rem; cursor: pointer; padding: 0.3rem 0.75rem; border-radius: 999px;
+    background: transparent; color: var(--muted); border: 1px solid var(--line-2);
+  }
+  .kinds button.on { color: #fff; background: var(--accent-dim); border-color: var(--accent); }
+  .feed { display: grid; gap: 1.2rem; max-width: 720px; }
+  .feed :global([hidden]) { display: none; }
+</style>

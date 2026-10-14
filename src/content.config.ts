@@ -12,25 +12,25 @@ const posts = defineCollection({
     updated: z.coerce.date().optional(),
     tags: z.array(z.string()).default([]),
     // e.g. "GCFA", "Homelab", "Tooling" — shown as a colored case-file label
-    category: z.string().default('Notes'),
+    category: z.string().default('Write-up'),
     cover: z.string().optional(),
     draft: z.boolean().default(false),
   }),
 });
 
-// Labs: hands-on projects / experiments, each can embed its own interactive pieces.
-const labs = defineCollection({
-  loader: glob({ pattern: '**/*.{md,mdx}', base: './src/content/labs' }),
+// LinkedIn posts mirrored on /posts. Body = the post text.
+const linkedin = defineCollection({
+  loader: glob({ pattern: '**/*.md', base: './src/content/linkedin' }),
   schema: z.object({
     title: z.string(),
-    description: z.string(),
     date: z.coerce.date(),
-    status: z.enum(['active', 'complete', 'planned']).default('active'),
-    stack: z.array(z.string()).default([]),
-    repo: z.string().url().optional(),
-    cover: z.string().optional(),
-    draft: z.boolean().default(false),
+    kind: z.enum(['milestone', 'cert', 'ctf', 'post']).default('post'),
+    url: z.string().url().optional(), // link to the LinkedIn post
+    image: z.string().optional(), // e.g. /images/linkedin/holmes-ctf.png
+    imageAlt: z.string().optional(),
+    stats: z.array(z.object({ label: z.string(), value: z.string() })).default([]),
+    tags: z.array(z.string()).default([]),
   }),
 });
 
-export const collections = { posts, labs };
+export const collections = { posts, linkedin };

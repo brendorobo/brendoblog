@@ -2,28 +2,29 @@
 import Base from '../layouts/Base.astro';
 import TerminalHero from '../components/TerminalHero.astro';
 import PostCard from '../components/PostCard.astro';
-import { getPosts, getLabs, readingTime } from '../lib/content';
+import LinkedInCard from '../components/LinkedInCard.astro';
+import { getPosts, getLinkedIn, readingTime } from '../lib/content';
 import { CURRENT_CERT, DOMAINS } from '../data/journey';
 
 const posts = await getPosts();
-const labs = await getLabs();
+const updates = await getLinkedIn();
 const items = [
-  ...posts.map((p) => ({ slug: p.id, title: p.data.title, kind: 'post' as const })),
-  ...labs.map((l) => ({ slug: l.id, title: l.data.title, kind: 'lab' as const })),
+  ...posts.map((p) => ({ title: p.data.title, kind: 'write-up' as const, href: `/blog/${p.id}/` })),
+  ...updates.map((u) => ({ title: u.data.title, kind: 'post' as const, href: `/posts/#${u.id}` })),
 ];
 const overall = Math.round(DOMAINS.reduce((s, d) => s + d.progress, 0) / DOMAINS.length);
 ---
 <Base>
   <section class="wrap hero">
     <div class="intro">
-      <div class="eyebrow">// digital forensics · incident response · lab notes</div>
+      <div class="eyebrow">// digital forensics · incident response · write-ups</div>
       <h1>Learning DFIR in public, <span class="hl">one artifact at a time.</span></h1>
       <p class="lede">
         I’m Brendon, a cybersecurity analyst working in SOC operations and incident response. I’m going deeper into forensics and working toward the{' '}
-        <strong>{CURRENT_CERT.name}</strong>. This is my notebook: what I study, what I break in the homelab, and what I learn from it.
+        <strong>{CURRENT_CERT.name}</strong>. Here I write up what I study, the cases and CTFs I work through, and what I learn from them.
       </p>
       <div class="cta">
-        <a class="btn" href="/blog/">read the notes →</a>
+        <a class="btn" href="/blog/">read the write-ups →</a>
         <a class="btn ghost" href="/journey/">gcfa progress: {overall}%</a>
       </div>
     </div>
@@ -32,8 +33,8 @@ const overall = Math.round(DOMAINS.reduce((s, d) => s + d.progress, 0) / DOMAINS
 
   <section class="wrap">
     <div class="section-head">
-      <h2>latest notes</h2>
-      <a class="mono" href="/blog/">all posts →</a>
+      <h2>latest write-ups</h2>
+      <a class="mono" href="/blog/">all write-ups →</a>
     </div>
     <div class="grid">
       {posts.slice(0, 3).map((p) => (
@@ -51,21 +52,11 @@ const overall = Math.round(DOMAINS.reduce((s, d) => s + d.progress, 0) / DOMAINS
     </div>
 
     <div class="section-head">
-      <h2>labs &amp; experiments</h2>
-      <a class="mono" href="/labs/">all labs →</a>
+      <h2>recent posts</h2>
+      <a class="mono" href="/posts/">all posts →</a>
     </div>
     <div class="grid">
-      {labs.slice(0, 3).map((l) => (
-        <PostCard
-          href={`/labs/${l.id}/`}
-          title={l.data.title}
-          description={l.data.description}
-          date={l.data.date}
-          label={l.data.status}
-          tags={l.data.stack}
-          cover={l.data.cover}
-        />
-      ))}
+      {updates.slice(0, 3).map((u) => <LinkedInCard item={u} compact />)}
     </div>
 
     <div class="section-head">
@@ -99,7 +90,7 @@ const overall = Math.round(DOMAINS.reduce((s, d) => s + d.progress, 0) / DOMAINS
   @media (min-width: 960px) { .hero { grid-template-columns: 1.05fr 1fr; padding-top: 5rem; } }
   h1 { margin: 0.8rem 0 1rem; }
   .hl {
-    background: linear-gradient(90deg, var(--accent), var(--cyan));
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
     -webkit-background-clip: text; background-clip: text; color: transparent;
   }
   .lede { color: var(--muted); font-size: 1.1rem; max-width: 52ch; }

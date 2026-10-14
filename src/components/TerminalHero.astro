@@ -1,7 +1,7 @@
 ---
 // Interactive shell on the home page. Commands are handled client-side;
-// the post/lab list is passed in so `ls` and `open` know about real content.
-interface Item { slug: string; title: string; kind: 'post' | 'lab' }
+// the write-up/post list is passed in so `ls` and `open` know about real content.
+interface Item { title: string; kind: 'write-up' | 'post'; href: string }
 interface Props { items: Item[] }
 const { items } = Astro.props;
 ---
@@ -19,7 +19,7 @@ const { items } = Astro.props;
 </div>
 
 <script>
-  type Item = { slug: string; title: string; kind: 'post' | 'lab' };
+  type Item = { title: string; kind: 'write-up' | 'post'; href: string };
 
   document.querySelectorAll<HTMLElement>('[data-term]').forEach((root) => {
     const out = root.querySelector<HTMLElement>('[data-out]')!;
@@ -37,10 +37,10 @@ const { items } = Astro.props;
       out.appendChild(d);
       out.scrollTop = out.scrollHeight;
     };
-    const url = (i: Item) => (i.kind === 'post' ? `/blog/${i.slug}/` : `/labs/${i.slug}/`);
+    const url = (i: Item) => i.href;
 
     const routes: Record<string, string> = {
-      blog: '/blog/', labs: '/labs/', journey: '/journey/', about: '/about/', whoami: '/about/', home: '/',
+      blog: '/blog/', 'write-ups': '/blog/', posts: '/posts/', journey: '/journey/', about: '/about/', whoami: '/about/', home: '/',
     };
 
     const cmds: Record<string, (args: string[]) => void> = {
@@ -48,9 +48,10 @@ const { items } = Astro.props;
         line(`<span class="k">available commands</span>`);
         [
           ['whoami', 'who runs this box'],
-          ['ls [posts|labs]', 'list case files'],
+          ['ls [write-ups|posts]', 'list case files'],
           ['open &lt;n&gt;', 'open item n from the last ls'],
-          ['cd &lt;blog|labs|journey|about&gt;', 'navigate'],
+          ['cd &lt;blog|posts|journey|about&gt;', 'navigate'],
+          ['theme &lt;nebula|phosphor&gt;', 'swap color scheme'],
           ['gcfa', 'current cert-prep status'],
           ['grep &lt;term&gt;', 'search titles'],
           ['triage', 'run a (fake) live response'],
@@ -64,11 +65,11 @@ const { items } = Astro.props;
       },
       ls(args) {
         const f = args[0];
-        const list = items.filter((i) => !f || (f.startsWith('post') && i.kind === 'post') || (f.startsWith('lab') && i.kind === 'lab'));
+        const list = items.filter((i) => !f || (f.startsWith('post') && i.kind === 'post') || (f.startsWith('write') && i.kind === 'write-up'));
         last = list;
         if (!list.length) return line('<span class="m">(empty)</span>');
         list.forEach((i, n) =>
-          line(`<span class="m">[${n + 1}]</span> <span class="${i.kind === 'post' ? 'c' : 'y'}">${i.kind}</span>  <a href="${url(i)}">${esc(i.title)}</a>`)
+          line(`<span class="m">[${n + 1}]</span> <span class="${i.kind === 'post' ? 'y' : 'c'}">${i.kind.padEnd(8, ' ')}</span>  <a href="${url(i)}">${esc(i.title)}</a>`)
         );
         line(`<span class="m">tip: open 1</span>`);
       },
@@ -76,7 +77,7 @@ const { items } = Astro.props;
         const n = parseInt(args[0], 10);
         const it = (last.length ? last : items)[n - 1];
         if (!it) return line(`<span class="r">open: no such item. run ls first.</span>`);
-        line(`<span class="m">mounting ${esc(it.slug)} read-only...</span>`);
+        line(`<span class="m">mounting ${esc(it.title)} read-only...</span>`);
         setTimeout(() => (location.href = url(it)), 350);
       },
       cd(args) {
@@ -112,6 +113,13 @@ const { items } = Astro.props;
       sudo() { line('<span class="r">analyst is not in the sudoers file. This incident will be reported.</span>'); },
       rm() { line('<span class="r">rm: refusing — evidence must stay write-protected.</span>'); },
       date() { line(new Date().toString()); },
+      theme(args) {
+        const t = (args[0] || '').toLowerCase();
+        if (t !== 'nebula' && t !== 'phosphor') return line('<span class="r">usage: theme nebula|phosphor</span>');
+        document.documentElement.dataset.theme = t;
+        try { localStorage.setItem('theme', t); } catch {}
+        line(`<span class="g">theme set to ${t}</span>`);
+      },
     };
     let last: Item[] = [];
 
@@ -149,7 +157,7 @@ const { items } = Astro.props;
 </script>
 
 <style>
-  .term { overflow: hidden; box-shadow: 0 30px 80px -40px rgba(57, 255, 136, 0.35); }
+  .term { overflow: hidden; box-shadow: 0 30px 80px -40px color-mix(in srgb, var(--accent) 35%, transparent); }
   .term-top {
     display: flex; align-items: center; gap: 7px;
     padding: 0.65rem 0.9rem; border-bottom: 1px solid var(--line); background: var(--bg-2);

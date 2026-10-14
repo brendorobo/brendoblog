@@ -1,0 +1,68 @@
+---
+import type { CollectionEntry } from 'astro:content';
+import { render } from 'astro:content';
+import { SITE } from '../site';
+
+interface Props { item: CollectionEntry<'linkedin'>; compact?: boolean }
+const { item, compact = false } = Astro.props;
+const d = item.data;
+const { Content } = await render(item);
+const iso = d.date.toISOString().slice(0, 10);
+const badge = { milestone: '🎓 milestone', cert: '🛡 certification', ctf: '🚩 ctf', post: '💬 post' }[d.kind];
+const link = d.url ?? `${SITE.linkedin}/recent-activity/all/`;
+---
+<article class:list={['li card reveal', d.kind, { compact }]} id={item.id} data-kind={d.kind}>
+  <header class="li-head">
+    <span class="avatar mono" aria-hidden="true">BR</span>
+    <div class="who">
+      <strong>{SITE.author}</strong>
+      <span class="mono sub"><time datetime={iso}>{iso}</time> · via linkedin</span>
+    </div>
+    <span class="kind mono">{badge}</span>
+  </header>
+  <h3>{d.title}</h3>
+  {!compact && <div class="body"><Content /></div>}
+  {d.stats.length > 0 && (
+    <dl class="stats mono">
+      {d.stats.map((s) => <div><dt>{s.label}</dt><dd>{s.value}</dd></div>)}
+    </dl>
+  )}
+  {!compact && d.image && <img class="shot" src={d.image} alt={d.imageAlt ?? d.title} loading="lazy" />}
+  <footer class="mono">
+    {!compact && d.tags.length > 0 && <span class="tags">{d.tags.map((t) => `#${t}`).join(' ')}</span>}
+    {compact ? <a href={`/posts/#${item.id}`}>read →</a> : <a href={link} rel="noopener" target="_blank">view on linkedin ↗</a>}
+  </footer>
+</article>
+
+<style>
+  .li { padding: 1.2rem 1.3rem; --k: var(--accent); border-top: 2px solid var(--k); scroll-margin-top: 90px; }
+  .li.cert { --k: var(--accent-2); }
+  .li.ctf { --k: var(--red); }
+  .li.milestone { --k: var(--amber); }
+  .li-head { display: flex; align-items: center; gap: 0.75rem; }
+  .avatar {
+    width: 38px; height: 38px; border-radius: 50%; display: grid; place-items: center; flex: none;
+    font-size: 0.78rem; font-weight: 700; color: #fff;
+    background: linear-gradient(135deg, var(--accent-dim), var(--accent-2));
+  }
+  .who { display: flex; flex-direction: column; line-height: 1.3; min-width: 0; }
+  .who strong { font-size: 0.92rem; }
+  .sub { font-size: 0.7rem; color: var(--dim); }
+  .kind {
+    margin-left: auto; font-size: 0.68rem; white-space: nowrap; color: var(--k);
+    border: 1px solid color-mix(in srgb, var(--k) 40%, transparent); padding: 0.1rem 0.5rem; border-radius: 999px;
+  }
+  h3 { margin: 1rem 0 0.4rem; font-size: 1.12rem; }
+  .body { color: #c3c8e0; font-size: 0.95rem; }
+  .body :global(p) { margin: 0.5rem 0; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 0.6rem; margin: 1rem 0; }
+  .stats div { background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; padding: 0.55rem 0.7rem; }
+  .stats dt { font-size: 0.64rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--dim); }
+  .stats dd { margin: 0.15rem 0 0; font-size: 0.86rem; color: var(--text); font-weight: 700; }
+  .shot { width: 100%; border-radius: 8px; border: 1px solid var(--line); margin: 0.4rem 0 0.8rem; }
+  footer { display: flex; justify-content: space-between; gap: 1rem; flex-wrap: wrap; font-size: 0.75rem; margin-top: 0.4rem; }
+  .tags { color: var(--accent); opacity: 0.85; }
+  footer a { margin-left: auto; }
+  .compact h3 { font-size: 1rem; margin-bottom: 0; }
+  .compact .stats { margin: 0.8rem 0 0.4rem; }
+</style>

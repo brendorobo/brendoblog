@@ -1,6 +1,6 @@
-# brendorobo // DFIR notebook
+# brendorobo // DFIR write-ups
 
-Personal blog + lab notebook. Built with [Astro](https://astro.build), deployed to GitHub Pages, DNS on Cloudflare.
+Personal DFIR blog. Built with [Astro](https://astro.build), deployed to GitHub Pages, DNS on Cloudflare.
 
 ## Run locally
 
@@ -12,8 +12,8 @@ npm run dev        # http://localhost:4321
 ## Write something
 
 ```bash
-npm run new -- "GCFA notes: lateral movement"     # new blog post
-npm run new -- lab "Velociraptor hunt lab"         # new lab/project
+npm run new -- "GCFA notes: lateral movement"     # new write-up
+npm run new -- linkedin "Passed the GCFA"          # mirror a LinkedIn post on /posts
 ```
 
 This creates an `.mdx` file (with `draft: true`, so it only shows in dev) and an image folder.
@@ -21,11 +21,11 @@ Remove `draft: true` when it's ready to publish.
 
 | What | Where |
 | --- | --- |
-| Posts | `src/content/posts/*.mdx` |
-| Labs / projects | `src/content/labs/*.mdx` |
+| Write-ups | `src/content/posts/*.mdx` |
+| LinkedIn posts (/posts) | `src/content/linkedin/*.md` |
 | Images | `public/images/posts/<slug>/` → `/images/posts/<slug>/file.png` |
 | GCFA progress, milestones, toolbox | `src/data/journey.ts` |
-| Name, links | `src/site.ts` |
+| Name, links, color theme | `src/site.ts` (`THEME = 'nebula'` or `'phosphor'`) |
 
 ### Components you can drop into any post
 

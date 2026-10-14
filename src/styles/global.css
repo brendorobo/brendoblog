@@ -1,4 +1,29 @@
-:root {
+/* Themes. Pick the default in src/site.ts (THEME). Visitors can also
+   switch live from the home-page terminal with `theme nebula|phosphor`. */
+
+/* nebula: blue / purple */
+:root,
+:root[data-theme='nebula'] {
+  --bg: #07081a;
+  --bg-2: #0b0d22;
+  --panel: #10132d;
+  --panel-2: #151938;
+  --line: #1f2448;
+  --line-2: #2e3566;
+  --text: #d5d9f2;
+  --muted: #8a90b8;
+  --dim: #565d8c;
+  --accent: #8c7dff;
+  --accent-dim: #5146c4;
+  --accent-2: #4fb8ff;
+  --amber: #ffbf5e;
+  --red: #ff5f8a;
+  --cyan: #5fd0ff;
+  --violet: #d58cff;
+}
+
+/* phosphor: the original terminal green */
+:root[data-theme='phosphor'] {
   --bg: #070b0a;
   --bg-2: #0c1211;
   --panel: #0f1716;
@@ -10,10 +35,14 @@
   --dim: #4d605b;
   --accent: #39ff88;
   --accent-dim: #1f8f4d;
+  --accent-2: #52d8ff;
   --amber: #ffb547;
   --red: #ff5a6a;
   --cyan: #52d8ff;
   --violet: #b28cff;
+}
+
+:root {
   --mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
   --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --radius: 10px;
@@ -42,8 +71,8 @@ body::before {
   inset: 0;
   pointer-events: none;
   background-image:
-    linear-gradient(to right, rgba(57, 255, 136, 0.035) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(57, 255, 136, 0.035) 1px, transparent 1px);
+    linear-gradient(to right, color-mix(in srgb, var(--accent) 3.5%, transparent) 1px, transparent 1px),
+    linear-gradient(to bottom, color-mix(in srgb, var(--accent) 3.5%, transparent) 1px, transparent 1px);
   background-size: 32px 32px;
   mask-image: radial-gradient(ellipse at top, #000 20%, transparent 75%);
   z-index: -1;
@@ -112,7 +141,7 @@ a.card:hover {
   text-decoration: none;
   border-color: var(--accent-dim);
   transform: translateY(-2px);
-  box-shadow: 0 8px 30px -12px rgba(57, 255, 136, 0.25);
+  box-shadow: 0 8px 30px -12px color-mix(in srgb, var(--accent) 25%, transparent);
 }
 
 .btn {
@@ -122,10 +151,10 @@ a.card:hover {
   border: 1px solid var(--accent-dim);
   border-radius: 8px;
   color: var(--accent);
-  background: rgba(57, 255, 136, 0.06);
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
   cursor: pointer;
 }
-.btn:hover { background: rgba(57, 255, 136, 0.14); text-decoration: none; }
+.btn:hover { background: color-mix(in srgb, var(--accent) 14%, transparent); text-decoration: none; }
 
 .section-head {
   display: flex; align-items: baseline; justify-content: space-between;

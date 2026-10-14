@@ -19,7 +19,10 @@ export const DOMAINS = [
 
 // Milestones shown as a vertical log on /journey. Newest first.
 export const MILESTONES = [
-  { date: '2026-10-14', title: 'Launched this site', detail: 'Notebook goes public — every lab and study session gets written up here.' },
+  { date: '2026-10-14', title: 'Launched this site', detail: 'Started publishing write-ups on brendorobo.com.' },
+  { date: '2026-09-29', title: 'B.S. Cybersecurity & Information Assurance', detail: 'Graduated from Western Governors University, earned while working full-time in the SOC.' },
+  { date: '2026-09-21', title: 'First CTF: HTB Holmes 2026', detail: 'Team FirstEnergy TSOC placed 476th of 5,637 teams, solving 42/111 challenges for 3,925 points.' },
+  { date: '2025-12-27', title: 'Passed the ISC2 SSCP', detail: 'Systems Security Certified Practitioner, earned as part of my WGU degree.' },
   { date: '2024-08', title: 'Cyber Security Analyst', detail: 'Moved into a full-time SOC role: alert triage, phishing and malware investigations, IR and forensics.' },
   { date: '2023-01', title: 'IT apprenticeship', detail: 'Started in IT as an apprentice while finishing my B.S. in Cybersecurity & Information Assurance.' },
 ];

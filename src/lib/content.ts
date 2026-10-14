@@ -5,9 +5,9 @@ export async function getPosts() {
   return posts.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 }
 
-export async function getLabs() {
-  const labs = await getCollection('labs', ({ data }) => import.meta.env.DEV || !data.draft);
-  return labs.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+export async function getLinkedIn() {
+  const items = await getCollection('linkedin');
+  return items.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
 }
 
 export function readingTime(body = '') {

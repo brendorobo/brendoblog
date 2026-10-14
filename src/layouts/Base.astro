@@ -1,6 +1,6 @@
 ---
 import '../styles/global.css';
-import { SITE, NAV } from '../site';
+import { SITE, NAV, THEME } from '../site';
 
 interface Props {
   title?: string;
@@ -14,7 +14,7 @@ const canonical = new URL(path, Astro.site);
 const ogImage = image ? new URL(image, Astro.site) : undefined;
 ---
 <!doctype html>
-<html lang="en">
+<html lang="en" data-theme={THEME}>
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -29,7 +29,10 @@ const ogImage = image ? new URL(image, Astro.site) : undefined;
     <meta property="og:type" content="website" />
     <meta property="og:url" content={canonical} />
     {ogImage && <meta property="og:image" content={ogImage} />}
-    <meta name="theme-color" content="#070b0a" />
+    <meta name="theme-color" content={THEME === 'phosphor' ? '#070b0a' : '#07081a'} />
+    <script is:inline>
+      try { const t = localStorage.getItem('theme'); if (t) document.documentElement.dataset.theme = t; } catch {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -90,7 +93,7 @@ const ogImage = image ? new URL(image, Astro.site) : undefined;
       .site-header {
         position: sticky; top: 0; z-index: 50;
         backdrop-filter: blur(10px);
-        background: rgba(7, 11, 10, 0.78);
+        background: color-mix(in srgb, var(--bg) 78%, transparent);
         border-bottom: 1px solid var(--line);
       }
       .bar { display: flex; align-items: center; justify-content: space-between; height: 60px; gap: 1rem; }

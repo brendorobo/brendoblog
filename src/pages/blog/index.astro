@@ -6,12 +6,12 @@ import { getPosts, readingTime } from '../../lib/content';
 const posts = await getPosts();
 const categories = [...new Set(posts.map((p) => p.data.category))];
 ---
-<Base title="Blog" description="Notes, study logs and write-ups.">
+<Base title="Write-ups" description="DFIR write-ups, study notes and blog posts.">
   <section class="wrap">
     <div class="top">
       <div class="eyebrow">// evidence locker</div>
-      <h1>Notes &amp; write-ups</h1>
-      <p class="muted">{posts.length} entries. Filter by category or grep for something specific.</p>
+      <h1>Write-ups</h1>
+      <p class="muted">{posts.length} write-ups. Filter by category or grep for something specific.</p>
       <div class="controls">
         <input class="search mono" type="search" placeholder="grep -i ..." aria-label="Search posts" data-search />
         <div class="cats mono" role="group" aria-label="Filter by category">
@@ -76,7 +76,7 @@ const categories = [...new Set(posts.map((p) => p.data.category))];
     flex: 1 1 260px; max-width: 420px; padding: 0.65rem 0.9rem; font-size: 0.88rem;
     background: var(--bg-2); color: var(--text); border: 1px solid var(--line-2); border-radius: 8px; outline: none;
   }
-  .search:focus { border-color: var(--accent-dim); box-shadow: 0 0 0 3px rgba(57, 255, 136, 0.1); }
+  .search:focus { border-color: var(--accent-dim); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 10%, transparent); }
   .cats { display: flex; flex-wrap: wrap; gap: 0.4rem; }
   .cats button {
     font: inherit; font-size: 0.76rem; cursor: pointer; padding: 0.3rem 0.75rem; border-radius: 999px;
