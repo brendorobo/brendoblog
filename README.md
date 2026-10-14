@@ -44,7 +44,7 @@ Need something custom for a project? Add an `.astro` component in `src/component
 
 ## Themes
 
-`nebula` (blue/purple), `breach` (red), `abyss` (dark blue), `phosphor` (green). Set the default with
+`graphite` (neutral, default), `nebula` (blue/purple), `breach` (red), `abyss` (dark blue), `phosphor` (green). Set the default with
 `THEME` in `src/site.ts`. Visitors can switch from the header picker or the terminal (`theme breach`).
 
 ## Comments (giscus)

@@ -170,7 +170,7 @@ import { CHEATSHEET, CHEATSHEET_SOURCE } from '../data/cheatsheet';
   .st { display: flex; flex-direction: column; gap: 0.15rem; }
   .sub { font-size: 0.8rem; color: var(--muted); }
   .flag { align-self: start; font-size: 0.62rem; text-transform: uppercase; letter-spacing: 0.08em; color: #fff; background: var(--accent-dim); padding: 0.1rem 0.45rem; border-radius: 4px; margin-top: 0.2rem; }
-  .steps p { margin: 0; color: #c3c8e0; font-size: 0.93rem; }
+  .steps p { margin: 0; color: var(--text-2); font-size: 0.93rem; }
   @media (max-width: 700px) { .steps li { grid-template-columns: 1fr; } }
 
   .tbl { overflow-x: auto; border: 1px solid var(--line); border-radius: var(--radius); }
@@ -180,21 +180,21 @@ import { CHEATSHEET, CHEATSHEET_SOURCE } from '../data/cheatsheet';
   tbody th { color: var(--text); font-weight: 600; white-space: nowrap; }
   tbody tr:last-child > * { border-bottom: 0; }
   tbody tr:hover { background: var(--panel); }
-  td { color: #c3c8e0; }
+  td { color: var(--text-2); }
 
   .cards { display: grid; gap: 0.8rem; grid-template-columns: repeat(auto-fill, minmax(min(100%, 240px), 1fr)); }
   .ccard { border: 1px solid var(--line); border-radius: var(--radius); padding: 0.9rem 1rem; background: var(--bg-2); }
-  .ccard p { margin: 0.35rem 0 0; font-size: 0.9rem; color: #c3c8e0; }
+  .ccard p { margin: 0.35rem 0 0; font-size: 0.9rem; color: var(--text-2); }
 
   .kv { margin: 0; border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; }
   .kv div { display: grid; grid-template-columns: minmax(7rem, 14rem) 1fr; gap: 1rem; padding: 0.55rem 0.8rem; border-bottom: 1px solid var(--line); font-size: 0.9rem; }
   .kv div:last-child { border-bottom: 0; }
   .kv dt { color: var(--accent); font-size: 0.82rem; }
-  .kv dd { margin: 0; color: #c3c8e0; }
+  .kv dd { margin: 0; color: var(--text-2); }
   @media (max-width: 560px) { .kv div { grid-template-columns: 1fr; gap: 0.2rem; } }
 
   .lst { padding-left: 1.3rem; margin: 0; }
-  .lst li { margin: 0.35rem 0; color: #c3c8e0; }
+  .lst li { margin: 0.35rem 0; color: var(--text-2); }
   .note { margin: 0.7rem 0 0; padding: 0.6rem 0.9rem; border-left: 3px solid var(--accent); background: color-mix(in srgb, var(--accent) 6%, transparent); border-radius: 0 6px 6px 0; font-size: 0.88rem; color: var(--text); }
   .source { font-size: 0.8rem; margin-top: 3rem; border-top: 1px dashed var(--line-2); padding-top: 1rem; }
   .empty { margin-top: 2rem; }

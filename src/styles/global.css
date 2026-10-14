@@ -1,8 +1,28 @@
 /* Themes. Pick the default in src/site.ts (THEME). Visitors can switch with the
-   picker in the header or the terminal: `theme nebula|breach|abyss|phosphor`. */
+   picker in the header or the terminal: `theme graphite|nebula|breach|abyss|phosphor`. */
+
+/* graphite: calm neutral dark (default) */
+:root,
+:root[data-theme='graphite'] {
+  --bg: #121314;
+  --bg-2: #161719;
+  --panel: #1b1c1f;
+  --panel-2: #212326;
+  --line: #2a2c30;
+  --line-2: #383b40;
+  --text: #dcdddf;
+  --muted: #9b9fa5;
+  --dim: #6a6e74;
+  --accent: #8fb3d4;
+  --accent-dim: #4d6a86;
+  --accent-2: #a7c6b6;
+  --amber: #d8b26e;
+  --red: #e07c7c;
+  --cyan: #8cc4d6;
+  --violet: #b4a4d6;
+}
 
 /* nebula: blue / purple */
-:root,
 :root[data-theme='nebula'] {
   --bg: #07081a;
   --bg-2: #0b0d22;
@@ -83,6 +103,9 @@
 }
 
 :root {
+  /* derived from each theme's base colors */
+  --text-2: color-mix(in srgb, var(--text) 86%, var(--bg));
+  --heading: color-mix(in srgb, var(--text) 55%, #fff);
   --mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
   --sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   --radius: 10px;
@@ -124,7 +147,7 @@ a { color: var(--accent); text-decoration: none; }
 a:hover { text-decoration: underline; text-underline-offset: 3px; }
 ::selection { background: var(--accent); color: #000; }
 
-h1, h2, h3, h4 { line-height: 1.2; color: #eef6f3; letter-spacing: -0.01em; }
+h1, h2, h3, h4 { line-height: 1.2; color: var(--heading); letter-spacing: -0.01em; }
 h1 { font-size: clamp(2rem, 5vw, 3rem); }
 code, kbd, pre, .mono { font-family: var(--mono); }
 :not(pre) > code {
@@ -217,7 +240,7 @@ a.card:hover {
 .prose h2 { margin-top: 2.6rem; font-size: 1.6rem; }
 .prose h2::before { content: '## '; color: var(--accent-dim); font-family: var(--mono); font-size: 0.8em; }
 .prose h3 { margin-top: 2rem; font-size: 1.25rem; }
-.prose p, .prose li { color: #c3d1cc; }
+.prose p, .prose li { color: var(--text-2); }
 .prose blockquote {
   margin: 1.5rem 0; padding: 0.4rem 1.2rem;
   border-left: 3px solid var(--amber);

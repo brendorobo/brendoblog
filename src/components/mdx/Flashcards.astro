@@ -74,7 +74,7 @@ const { title = 'flashcards', cards } = Astro.props;
     font-size: 1.05rem;
   }
   .face p { margin: 0; }
-  .back { transform: rotateY(180deg); background: color-mix(in srgb, var(--accent) 5%, transparent); border-color: var(--accent-dim); color: #eafff2; }
+  .back { transform: rotateY(180deg); background: color-mix(in srgb, var(--accent) 5%, transparent); border-color: var(--accent-dim); color: var(--heading); }
   .lbl { position: absolute; top: 0.5rem; left: 0.7rem; font-size: 0.7rem; color: var(--dim); }
   .back .lbl { color: var(--accent); }
   @media (prefers-reduced-motion: reduce) { .card3d { transition: none; } }

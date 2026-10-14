@@ -23,13 +23,14 @@ export const SITE = {
 
 // Color themes. THEME is the default; visitors can switch from the header or terminal.
 export const THEMES = {
+  graphite: { label: 'graphite', swatch: '#8fb3d4', bg: '#121314' }, // calm neutral (default)
   nebula: { label: 'nebula', swatch: '#8c7dff', bg: '#07081a' }, // blue / purple
   breach: { label: 'breach', swatch: '#ff3b4e', bg: '#0b0506' }, // red
   abyss: { label: 'abyss', swatch: '#3d9bff', bg: '#030a16' }, // dark blue
   phosphor: { label: 'phosphor', swatch: '#39ff88', bg: '#070b0a' }, // terminal green
 } as const;
 export type ThemeName = keyof typeof THEMES;
-export const THEME: ThemeName = 'nebula';
+export const THEME: ThemeName = 'graphite';
 
 export const NAV = [
   { href: '/blog/', label: 'write-ups' },

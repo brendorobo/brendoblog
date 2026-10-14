@@ -21,7 +21,7 @@ const enabled = !!(g.repoId && g.categoryId);
   if (box) {
     const theme = () => {
       // giscus has no per-site theme here, so pick the closest built-in dark theme
-      return document.documentElement.dataset.theme === 'phosphor' ? 'dark_dimmed' : 'transparent_dark';
+      return ['phosphor', 'graphite'].includes(document.documentElement.dataset.theme || '') ? 'dark_dimmed' : 'transparent_dark';
     };
     const s = document.createElement('script');
     s.src = 'https://giscus.app/client.js';
