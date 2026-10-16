@@ -44,6 +44,14 @@ const extra = { eventIds: EVENT_IDS, themes: Object.keys(THEMES) };
     };
     const url = (i: Item) => i.href;
 
+    // Turn "journey", "/journey", "./journey/", "~/cheatsheet", "/blog/ghost-drive" into a URL (or null).
+    const resolve = (raw: string): string | null => {
+      const p = raw.toLowerCase().replace(/^(\.\/|~\/?)/, '').replace(/^\/+|\/+$/g, '');
+      if (p === '' || p === '~') return '/';
+      if (routes[p]) return routes[p];
+      const hit = items.find((i) => i.href.replace(/^\/+|\/+$/g, '') === p);
+      return hit ? hit.href : null;
+    };
     const routes: Record<string, string> = {
       blog: '/blog/', 'write-ups': '/blog/', posts: '/posts/', cheatsheet: '/cheatsheet/', resume: '/resume/', journey: '/journey/', about: '/about/', whoami: '/about/', home: '/',
     };
@@ -58,7 +66,7 @@ const extra = { eventIds: EVENT_IDS, themes: Object.keys(THEMES) };
           ['resume', 'open my resume'],
           ['cheatsheet', 'open the GCFA cheat sheet'],
           ['eventid &lt;id&gt;', 'look up a Windows Event ID'],
-          ['cd &lt;blog|posts|journey|about&gt;', 'navigate'],
+          ['cd &lt;page&gt; · /&lt;page&gt;', 'navigate, e.g. /journey or cd cheatsheet'],
           ['theme [name]', 'list or switch color themes'],
           ['gcfa', 'current cert-prep status'],
           ['grep &lt;term&gt;', 'search titles'],
@@ -90,7 +98,7 @@ const extra = { eventIds: EVENT_IDS, themes: Object.keys(THEMES) };
         setTimeout(() => (location.href = url(it)), 350);
       },
       cd(args) {
-        const r = routes[(args[0] || '').replace(/^\/|\/$/g, '')];
+        const r = resolve(args[0] || '~');
         if (!r) return line(`<span class="r">cd: ${esc(args[0] || '')}: No such directory</span>`);
         location.href = r;
       },
@@ -162,7 +170,13 @@ const extra = { eventIds: EVENT_IDS, themes: Object.keys(THEMES) };
       hIdx = history.length;
       const [name, ...args] = cmd.split(/\s+/);
       const fn = cmds[name.toLowerCase()];
+      const looksLikePath = /^(\/|\.\/|~)/.test(name);
+      const target = !fn && (looksLikePath || routes[name.toLowerCase()]) ? resolve(name) : null;
       if (fn) fn(args);
+      else if (target) {
+        line(`<span class="m">cd ${esc(target)}</span>`);
+        setTimeout(() => (location.href = target), 250);
+      } else if (looksLikePath) line(`<span class="r">${esc(name)}: No such file or directory</span> <span class="m">— try 'ls' or 'help'</span>`);
       else line(`<span class="r">${esc(name)}: command not found</span> <span class="m">— try 'help'</span>`);
     };
 
