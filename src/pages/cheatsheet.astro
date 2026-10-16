@@ -1,6 +1,9 @@
 ---
 import Base from '../layouts/Base.astro';
 import { CHEATSHEET, CHEATSHEET_SOURCE } from '../data/cheatsheet';
+import { buildFlashcards } from '../lib/flashcards';
+import QuizMode from '../components/QuizMode.astro';
+const flashcards = buildFlashcards(CHEATSHEET);
 ---
 <Base title="Cheat sheet" description="GCFA / SANS FOR508 core concepts: IR process, credential theft, evidence of execution, lateral movement, Event IDs, memory, timelines, NTFS.">
   <section class="wrap cs">
@@ -14,14 +17,21 @@ import { CHEATSHEET, CHEATSHEET_SOURCE } from '../data/cheatsheet';
     </header>
 
     <div class="controls">
-      <div class="search-wrap mono">
+      <div class="modes mono" role="tablist" aria-label="View">
+        <button type="button" role="tab" data-mode="ref" aria-selected="true">reference</button>
+        <button type="button" role="tab" data-mode="quiz" aria-selected="false">🃏 quiz me <span class="cnt">{flashcards.length}</span></button>
+      </div>
+      <div class="search-wrap mono" data-ref-only>
         <span class="ps">grep -i</span>
         <input type="search" data-q placeholder="4624, prefetch, kerberoast, malfind…" aria-label="Search the cheat sheet" />
         <kbd>/</kbd>
       </div>
-      <span class="mono count" data-count aria-live="polite"></span>
+      <span class="mono count" data-count aria-live="polite" data-ref-only></span>
     </div>
 
+    <QuizMode cards={flashcards} sections={CHEATSHEET} />
+
+    <div data-ref>
     <nav class="index mono" aria-label="Sections">
       {CHEATSHEET.map((s) => <a href={`#${s.id}`} data-jump={s.id}><span>{s.num}</span>{s.title}</a>)}
     </nav>
@@ -84,11 +94,29 @@ import { CHEATSHEET, CHEATSHEET_SOURCE } from '../data/cheatsheet';
     ))}
 
     <p class="empty mono muted" data-empty hidden>no hits. try a shorter term.</p>
+    </div>
     <p class="source muted">{CHEATSHEET_SOURCE}</p>
   </section>
 </Base>
 
 <script>
+  // reference / quiz toggle (?mode=quiz deep-links straight into the quiz)
+  const quiz = document.querySelector<HTMLElement>('[data-quiz]')!;
+  const ref = document.querySelector<HTMLElement>('[data-ref]')!;
+  const refOnly = document.querySelectorAll<HTMLElement>('[data-ref-only]');
+  const modeBtns = document.querySelectorAll<HTMLButtonElement>('[data-mode]');
+  const setMode = (m: string) => {
+    const isQuiz = m === 'quiz';
+    quiz.hidden = !isQuiz; ref.hidden = isQuiz;
+    refOnly.forEach((el) => (el.hidden = isQuiz));
+    modeBtns.forEach((b) => b.setAttribute('aria-selected', String(b.dataset.mode === m)));
+    const u = new URL(location.href);
+    isQuiz ? u.searchParams.set('mode', 'quiz') : u.searchParams.delete('mode');
+    history.replaceState(null, '', u);
+  };
+  modeBtns.forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode!)));
+  if (new URLSearchParams(location.search).get('mode') === 'quiz') setMode('quiz');
+
   const q = document.querySelector<HTMLInputElement>('[data-q]')!;
   const count = document.querySelector<HTMLElement>('[data-count]')!;
   const empty = document.querySelector<HTMLElement>('[data-empty]')!;
@@ -121,7 +149,7 @@ import { CHEATSHEET, CHEATSHEET_SOURCE } from '../data/cheatsheet';
   };
   q.addEventListener('input', apply);
   addEventListener('keydown', (e) => {
-    if (e.key === '/' && document.activeElement !== q) { e.preventDefault(); q.focus(); }
+    if (e.key === '/' && document.activeElement !== q && !ref.hidden) { e.preventDefault(); q.focus(); }
     if (e.key === 'Escape' && document.activeElement === q) { q.value = ''; apply(); }
   });
   // ?q=4624 deep-links a search (used by the terminal's `eventid` command)
@@ -147,6 +175,13 @@ import { CHEATSHEET, CHEATSHEET_SOURCE } from '../data/cheatsheet';
   .search-wrap:focus-within { border-color: var(--accent-dim); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 12%, transparent); }
   .ps { color: var(--accent); font-size: 0.8rem; white-space: nowrap; }
   .search-wrap input { flex: 1; min-width: 0; background: none; border: 0; outline: none; color: var(--text); font: inherit; font-size: 0.88rem; }
+  .modes { display: inline-flex; border: 1px solid var(--line-2); border-radius: 10px; padding: 3px; background: var(--bg-2); }
+  .modes button {
+    font: inherit; font-size: 0.8rem; cursor: pointer; padding: 0.4rem 0.8rem; border: 0; border-radius: 7px;
+    background: transparent; color: var(--muted);
+  }
+  .modes button[aria-selected='true'] { background: var(--accent-dim); color: #fff; }
+  .modes .cnt { font-size: 0.68rem; opacity: 0.7; margin-left: 0.2rem; }
   kbd { font-size: 0.7rem; color: var(--dim); border: 1px solid var(--line-2); border-radius: 4px; padding: 0 0.35rem; }
   .count { font-size: 0.78rem; color: var(--muted); }
   .index { display: flex; flex-wrap: wrap; gap: 0.4rem; margin: 0.4rem 0 1rem; font-size: 0.75rem; }
@@ -201,7 +236,7 @@ import { CHEATSHEET, CHEATSHEET_SOURCE } from '../data/cheatsheet';
   [hidden] { display: none !important; }
 
   @media print {
-    .controls, .index { display: none; }
+    .controls, .index, .quiz { display: none; }
     :global(.site-header), :global(.site-footer) { display: none; }
   }
 </style>

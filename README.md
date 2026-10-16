@@ -27,7 +27,7 @@ Remove `draft: true` when it's ready to publish.
 | GCFA status, milestones, certs, toolbox | `src/data/journey.ts` |
 | "Currently" box + study log (mood) | `src/data/now.ts` |
 | Resume (/resume + About) | `src/data/resume.ts` |
-| Cheat sheet (/cheatsheet) | `src/data/cheatsheet.ts` |
+| Cheat sheet (/cheatsheet) + its flashcard quiz | `src/data/cheatsheet.ts` (cards are generated from it by `src/lib/flashcards.ts`) |
 | Name, links, default theme, comments, analytics | `src/site.ts` |
 
 ### Components you can drop into any post

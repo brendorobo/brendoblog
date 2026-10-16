@@ -65,6 +65,7 @@ const extra = { eventIds: EVENT_IDS, themes: Object.keys(THEMES) };
           ['open &lt;n&gt;', 'open item n from the last ls'],
           ['resume', 'open my resume'],
           ['cheatsheet', 'open the GCFA cheat sheet'],
+          ['quiz', 'flashcards from the cheat sheet'],
           ['eventid &lt;id&gt;', 'look up a Windows Event ID'],
           ['cd &lt;page&gt; · /&lt;page&gt;', 'navigate, e.g. /journey or cd cheatsheet'],
           ['theme [name]', 'list or switch color themes'],
@@ -139,6 +140,10 @@ const extra = { eventIds: EVENT_IDS, themes: Object.keys(THEMES) };
       cheatsheet() {
         line('<span class="m">opening exhibit B ...</span>');
         setTimeout(() => (location.href = '/cheatsheet/'), 350);
+      },
+      quiz() {
+        line('<span class="m">loading flashcards ...</span>');
+        setTimeout(() => (location.href = '/cheatsheet/?mode=quiz'), 350);
       },
       eventid(args) {
         const id = (args[0] || '').trim();

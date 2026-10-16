@@ -1,0 +1,209 @@
+---
+// Flashcard quiz built from the cheat sheet. Pick decks, flip, mark "got it" or "again".
+// Cards marked "again" come back a few cards later until you get them.
+import type { Flashcard } from '../lib/flashcards';
+import type { Section } from '../data/cheatsheet';
+
+interface Props { cards: Flashcard[]; sections: Section[] }
+const { cards, sections } = Astro.props;
+const counts = Object.fromEntries(sections.map((s) => [s.id, cards.filter((c) => c.section === s.id).length]));
+---
+<section class="quiz" data-quiz hidden aria-label="Flashcard quiz">
+  <div class="setup mono">
+    <div class="decks" role="group" aria-label="Choose decks">
+      <button type="button" class="deck all" data-all>all</button>
+      {sections.filter((s) => counts[s.id] > 0).map((s) => (
+        <button type="button" class="deck" data-deck={s.id} aria-pressed="true">
+          <span class="n">{s.num}</span>{s.title}<span class="c">{counts[s.id]}</span>
+        </button>
+      ))}
+    </div>
+    <div class="opts">
+      <label><input type="checkbox" data-reverse /> answer first</label>
+      <button type="button" class="btn" data-start>shuffle &amp; start</button>
+    </div>
+  </div>
+
+  <div class="play" data-play hidden>
+    <div class="status mono">
+      <span data-pos></span>
+      <span><span class="ok">✓ <b data-known>0</b></span> · <span class="again-c">↻ <b data-again>0</b></span></span>
+    </div>
+    <div class="bar"><span data-bar></span></div>
+
+    <div class="stage" data-stage tabindex="0" aria-live="polite">
+      <div class="card3d" data-card>
+        <div class="face front"><span class="lbl mono" data-label></span><div class="txt" data-front></div><span class="hint mono">click or space to flip</span></div>
+        <div class="face back"><span class="lbl mono">answer</span><div class="txt" data-back></div></div>
+      </div>
+    </div>
+
+    <div class="actions mono">
+      <button type="button" class="again" data-again-btn>↻ again <kbd>1</kbd></button>
+      <button type="button" data-flip>flip <kbd>space</kbd></button>
+      <button type="button" class="got" data-got>got it ✓ <kbd>2</kbd></button>
+    </div>
+  </div>
+
+  <div class="done card" data-done hidden>
+    <div class="mono eyebrow">// session complete</div>
+    <p class="score" data-score></p>
+    <p class="muted" data-score-note></p>
+    <div class="done-actions">
+      <button type="button" class="btn" data-review hidden>review the ones I missed</button>
+      <button type="button" class="btn" data-restart>new round</button>
+    </div>
+  </div>
+
+  <script type="application/json" data-cards set:html={JSON.stringify(cards)} />
+</section>
+
+<script>
+  type Card = { id: string; section: string; label: string; front: string; back: string };
+  const root = document.querySelector<HTMLElement>('[data-quiz]');
+  if (root) {
+    const all: Card[] = JSON.parse(root.querySelector('[data-cards]')!.textContent || '[]');
+    const $ = <T extends HTMLElement>(s: string) => root.querySelector<T>(s)!;
+    const deckBtns = [...root.querySelectorAll<HTMLButtonElement>('[data-deck]')];
+    const reverse = $<HTMLInputElement>('[data-reverse]');
+    const play = $('[data-play]'), done = $('[data-done]'), card = $('[data-card]'), stage = $('[data-stage]');
+    const store = { get(k: string) { try { return localStorage.getItem(k); } catch { return null; } }, set(k: string, v: string) { try { localStorage.setItem(k, v); } catch {} } };
+
+    // restore preferences
+    const saved = store.get('quiz-decks');
+    if (saved) { const on = saved.split(','); deckBtns.forEach((b) => b.setAttribute('aria-pressed', String(on.includes(b.dataset.deck!)))); }
+    reverse.checked = store.get('quiz-reverse') === '1';
+
+    const chosen = () => deckBtns.filter((b) => b.getAttribute('aria-pressed') === 'true').map((b) => b.dataset.deck!);
+    const saveDecks = () => store.set('quiz-decks', chosen().join(','));
+    deckBtns.forEach((b) => b.addEventListener('click', () => {
+      b.setAttribute('aria-pressed', String(b.getAttribute('aria-pressed') !== 'true')); saveDecks();
+    }));
+    $('[data-all]').addEventListener('click', () => {
+      const anyOff = deckBtns.some((b) => b.getAttribute('aria-pressed') !== 'true');
+      deckBtns.forEach((b) => b.setAttribute('aria-pressed', String(anyOff))); saveDecks();
+    });
+    reverse.addEventListener('change', () => store.set('quiz-reverse', reverse.checked ? '1' : '0'));
+
+    let queue: Card[] = [], total = 0, known = 0, missed = new Set<string>(), flipped = false;
+    const shuffle = <T,>(a: T[]) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+    const show = () => {
+      const c = queue[0];
+      flipped = false; card.classList.remove('flipped');
+      if (!c) return finish();
+      const [f, b] = reverse.checked ? [c.back, c.front] : [c.front, c.back];
+      $('[data-label]').textContent = c.label;
+      $('[data-front]').innerHTML = f;
+      $('[data-back]').innerHTML = b;
+      $('[data-pos]').textContent = `${total - queue.length + 1} / ${total}${missed.size ? '' : ''}`;
+      $('[data-known]').textContent = String(known);
+      $('[data-again]').textContent = String(missed.size);
+      $<HTMLElement>('[data-bar]').style.width = `${(known / total) * 100}%`;
+    };
+    const start = (cards: Card[]) => {
+      queue = shuffle([...cards]); total = queue.length; known = 0; missed = new Set();
+      if (!total) return;
+      done.hidden = true; play.hidden = false; show(); stage.focus({ preventScroll: true });
+      play.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    };
+    const flip = () => { if (!queue.length) return; flipped = !flipped; card.classList.toggle('flipped', flipped); };
+    const got = () => { if (!queue.length) return; queue.shift(); known++; show(); };
+    const again = () => {
+      if (!queue.length) return;
+      const c = queue.shift()!; missed.add(c.id);
+      queue.splice(Math.min(3, queue.length), 0, c); // comes back a few cards later
+      total = Math.max(total, known + queue.length); show();
+    };
+    const finish = () => {
+      play.hidden = true; done.hidden = false;
+      done.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      const firstTry = total - missed.size;
+      $('[data-score]').textContent = `${firstTry} / ${total} on the first try`;
+      $('[data-score-note]').textContent = missed.size
+        ? `${missed.size} card${missed.size === 1 ? '' : 's'} needed another look. Run them again until they stick.`
+        : 'Clean sweep. Pick another deck or flip to answer-first mode.';
+      const review = $<HTMLButtonElement>('[data-review]');
+      review.hidden = !missed.size;
+      review.onclick = () => start(all.filter((c) => missed.has(c.id)));
+    };
+
+    $('[data-start]').addEventListener('click', () => {
+      const decks = chosen();
+      const pool = all.filter((c) => decks.includes(c.section));
+      if (!pool.length) { $('[data-start]').textContent = 'pick a deck first'; setTimeout(() => ($('[data-start]').textContent = 'shuffle & start'), 1400); return; }
+      start(pool);
+    });
+    $('[data-restart]').addEventListener('click', () => $<HTMLButtonElement>('[data-start]').click());
+    $('[data-flip]').addEventListener('click', flip);
+    $('[data-got]').addEventListener('click', got);
+    $('[data-again-btn]').addEventListener('click', again);
+    stage.addEventListener('click', flip);
+    addEventListener('keydown', (e) => {
+      const t = e.target;
+      if (root.hidden || play.hidden || (t instanceof HTMLElement && t.matches('input, textarea, select'))) return;
+      if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flip(); }
+      if (e.key === '1' || e.key === 'ArrowLeft') again();
+      if (e.key === '2' || e.key === 'ArrowRight') got();
+    });
+  }
+</script>
+
+<style>
+  .quiz { margin: 1rem 0 2rem; }
+  .setup { display: grid; gap: 1rem; padding: 1rem 0 1.2rem; border-bottom: 1px dashed var(--line-2); }
+  .decks { display: flex; flex-wrap: wrap; gap: 0.4rem; }
+  .deck {
+    font: inherit; font-size: 0.74rem; cursor: pointer; display: inline-flex; gap: 0.45rem; align-items: center;
+    padding: 0.3rem 0.7rem; border-radius: 999px; background: transparent; color: var(--muted); border: 1px solid var(--line-2);
+  }
+  .deck .n { color: var(--dim); }
+  .deck .c { font-size: 0.66rem; color: var(--dim); border-left: 1px solid var(--line-2); padding-left: 0.45rem; }
+  .deck[aria-pressed='true'] { color: var(--text); border-color: var(--accent-dim); background: color-mix(in srgb, var(--accent) 12%, transparent); }
+  .deck.all { color: var(--accent); }
+  .opts { display: flex; align-items: center; gap: 1.2rem; flex-wrap: wrap; font-size: 0.8rem; }
+  .opts label { display: inline-flex; gap: 0.45rem; align-items: center; cursor: pointer; color: var(--muted); }
+  .opts input { accent-color: var(--accent); }
+
+  .play { max-width: 760px; margin: 1.4rem auto 0; scroll-margin-top: 130px; }
+  .done { scroll-margin-top: 130px; }
+  .status { display: flex; justify-content: space-between; font-size: 0.78rem; color: var(--muted); margin-bottom: 0.5rem; }
+  .ok { color: var(--accent); } .again-c { color: var(--amber); }
+  .bar { height: 4px; background: var(--line); border-radius: 99px; overflow: hidden; margin-bottom: 1rem; }
+  .bar span { display: block; height: 100%; width: 0; background: var(--accent); transition: width 0.3s; }
+
+  .stage { perspective: 1200px; cursor: pointer; outline: none; }
+  .stage:focus-visible .face { border-color: var(--accent); }
+  .card3d { position: relative; min-height: 260px; transition: transform 0.45s; transform-style: preserve-3d; }
+  .card3d.flipped { transform: rotateY(180deg); }
+  .face {
+    position: absolute; inset: 0; backface-visibility: hidden; display: flex; flex-direction: column;
+    align-items: center; justify-content: center; text-align: center; padding: 2.2rem 1.6rem;
+    border-radius: var(--radius); border: 1px solid var(--line-2); background: var(--bg-2); overflow-y: auto;
+  }
+  .back { transform: rotateY(180deg); border-color: var(--accent-dim); background: color-mix(in srgb, var(--accent) 6%, var(--bg-2)); }
+  .lbl { position: absolute; top: 0.7rem; left: 0.9rem; font-size: 0.68rem; color: var(--dim); text-transform: uppercase; letter-spacing: 0.08em; }
+  .back .lbl { color: var(--accent); }
+  .hint { position: absolute; bottom: 0.6rem; font-size: 0.66rem; color: var(--dim); }
+  .txt { font-size: 1.15rem; line-height: 1.55; max-width: 60ch; }
+  .back .txt { font-size: 0.98rem; color: var(--text); }
+  .txt :global(.k) { font-family: var(--mono); font-size: 0.7rem; color: var(--accent); text-transform: uppercase; letter-spacing: 0.05em; margin-right: 0.3rem; }
+  .txt :global(code) { white-space: normal; word-break: break-word; }
+
+  .actions { display: grid; grid-template-columns: 1fr auto 1fr; gap: 0.6rem; margin-top: 1rem; }
+  .actions button {
+    font: inherit; font-size: 0.82rem; cursor: pointer; padding: 0.7rem 0.9rem; border-radius: 8px;
+    background: var(--bg-2); color: var(--text); border: 1px solid var(--line-2);
+  }
+  .actions .again { border-color: color-mix(in srgb, var(--amber) 45%, transparent); color: var(--amber); }
+  .actions .got { border-color: var(--accent-dim); color: var(--accent); }
+  .actions button:hover { background: var(--panel-2); }
+  kbd { font-size: 0.65rem; color: var(--dim); border: 1px solid var(--line-2); border-radius: 3px; padding: 0 0.3rem; margin-left: 0.3rem; }
+  @media (max-width: 560px) { kbd { display: none; } .card3d { min-height: 300px; } }
+
+  .done { max-width: 760px; margin: 1.4rem auto 0; padding: 1.6rem; text-align: center; }
+  .score { font-size: 1.8rem; font-weight: 700; margin: 0.6rem 0 0.2rem; color: var(--heading); }
+  .done-actions { display: flex; gap: 0.6rem; justify-content: center; flex-wrap: wrap; margin-top: 1rem; }
+  [hidden] { display: none !important; }
+  @media (prefers-reduced-motion: reduce) { .card3d { transition: none; } }
+</style>
