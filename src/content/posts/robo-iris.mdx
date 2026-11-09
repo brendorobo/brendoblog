@@ -1,0 +1,178 @@
+---
+title: 'I Built robo-iris: An Offline DFIR Workbench With Its Own Local AI Analyst'
+description: 'A case workbench for incident response that runs from a USB stick, never touches the internet, and ships its own local LLM, plus a harness that checks the AI''s work before I trust it.'
+date: 2026-11-09
+category: Tooling
+tags: [dfir, incident-response, ai, llm, local-llm, tooling, privacy]
+---
+import Callout from '../../components/mdx/Callout.astro';
+import Figure from '../../components/mdx/Figure.astro';
+
+<Callout type="note" title="tl;dr">
+**robo-iris** is a DFIR case workbench I built: cases, timelines, findings, IOCs, evidence with chain of
+custody, and one-click reports in PDF, Word, Excel and HTML. It has a **local AI analyst built in**: a Gemma 4
+model running on llama.cpp, entirely on the machine, with no internet and no account. The part I'm proudest of
+isn't the AI, though. It's the **harness around it**, which numbers every log line, decodes Base64 itself, and
+mechanically checks every citation and ATT&CK ID the model gives back. The whole thing is one folder: a 9 MB exe
+plus the engine, models and tools. It runs from a USB stick.
+</Callout>
+
+In my [last AI post](/blog/local-llm) I talked about running models locally for privacy. This is where that
+went. I wanted a place to *work a case* that I could carry to any Windows box, that would never send evidence
+anywhere, and that had an AI sitting next to me that I could actually hold to account.
+
+It's inspired by [DFIR-IRIS](https://github.com/dfir-iris/iris-web), the open-source incident response platform,
+and follows its case model. It's new code, though, not a fork, and it's built to run offline from a single
+folder. I built it with an AI coding assistant as my pair programmer, which was a whole learning experience on
+its own.
+
+## What it is
+
+At its core it's a case management workbench, with the things I reach for on every investigation:
+
+- **Cases and alerts**, with a triage queue that can escalate an alert into a case.
+- **A timeline** of UTC events with host, source, ATT&CK technique, evidence reference and a ★ key-event flag.
+- **Findings** that force you to separate *observation* (what the evidence shows) from *interpretation* (what
+  you think it means), with bounded confidence.
+- **IOCs** (auto-defanged), **assets**, **evidence** with automatic hashing and a chain-of-custody log,
+  **tasks**, **notes** and **screenshots** (the original file is kept byte-for-byte and SHA-256 hashed).
+- **An offline knowledge base:** 153 ATT&CK techniques with "what to look for" notes, 99 Windows event IDs, 56
+  forensic artifacts, 12 scenario playbooks with task checklists, and cheat sheets for 49 DFIR tools.
+
+<Figure src="/images/posts/robo-iris/dashboard.jpg" alt="robo-iris dashboard with open cases, recent alerts, open tasks and a New to IR playbook panel" caption="the dashboard (demo data)" wide />
+
+Everything runs on `127.0.0.1` behind a per-launch token, with a strict Content-Security-Policy, and it loads
+nothing from the internet. Even the fonts are bundled. All the data lives in one `data\` folder, so moving
+every case to another machine means copying one folder.
+
+## The timeline that finds the incident for you
+
+The visual timeline was the feature I iterated on most. Real cases have hundreds of events spread over weeks:
+software installs, old file dates, routine logons. The attack usually happens in a window of a few hours.
+
+So the chart **finds that window itself**. Every event gets an importance score: critical and high detections
+count most, then key events and anything tagged with an ATT&CK technique. It then picks out the densest burst of
+important activity. On a real practice case it went from showing *Dec 2019 → Oct 2022* to a 42-hour window
+containing the Cobalt Strike detections, the persistence task, PsExec and the beacon traffic. You can switch to
+all events or a custom range, and the event table below follows whichever window you pick.
+
+<Figure src="/images/posts/robo-iris/timeline.jpg" alt="visual timeline showing a 2-hour incident window with labelled events: Office spawning PowerShell, LSASS dump, scheduled task, Defender disabled" caption="the incident window: labels go to the most important events first, and repeats merge (×3)" wide />
+
+Labels go to the most important events first, with one per event type before any repeats, and identical
+events close together merge into one label (`×3` for the beacons above). You can export just the timeline as
+PDF, Word, Excel, HTML, CSV or a PNG/SVG image for slides. The CSV export neutralises cells that start like
+Excel formulas, because attacker-controlled command lines end up in those cells.
+
+## The local AI analyst
+
+The app ships its own AI engine: **llama.cpp** (Vulkan build, which also includes every CPU backend) running
+**Gemma 4 26B-A4B**. That's a mixture-of-experts model, so only about 4B of its 26B parameters work on each
+token. That's why it's usable even on a CPU.
+
+Two rules I set for myself:
+
+1. **The AI never starts on its own.** You press *start AI* and acknowledge that it's an offline local model.
+   The engine listens on `127.0.0.1` only, with a random key per launch, so nothing else on the machine can use
+   it. A Windows job object ties it to the app, so closing robo-iris always kills it.
+2. **AI output is a lead, not a fact.** Everything the AI produces is marked *AI-assisted* and disclosed in the
+   report.
+
+<Figure src="/images/posts/robo-iris/ai-panel.jpg" alt="case findings page with the AI assistant open as a side panel on the right" caption="the AI panel stays open beside any page (Alt+A), or pops out into its own window for a second monitor" wide />
+
+### The harness matters more than the model
+
+Testing local models against my own planted-attack logs taught me fast that the model is just *one
+component*. Here's what kept going wrong, and what the harness does about it:
+
+| What local models did | What the harness does |
+|---|---|
+| Cited evidence vaguely or made lines up | Every log line is numbered (`L0042`), and the verifier rejects any citation to a line that doesn't exist |
+| A 12B model "decoded" a PowerShell download cradle into an invented `.jar` URL | The harness decodes `-EncodedCommand` / Base64 **itself** and hands the model the exact plaintext. The model is told never to decode anything |
+| Invented ATT&CK IDs, or put the wrong name on a real one | Every technique ID is checked against the offline ATT&CK library, and name/ID mismatches are flagged |
+| Logs bigger than the context window | Chunks on line boundaries (so citations stay valid), then merges the chunk analyses map-reduce style |
+| Reasoning models "thought" until they ran out of tokens | Reasoning is switched off for list-style modes, and any answer cut off at the limit is flagged |
+
+It has nine purpose-built modes: strict evidence-bound triage, an IR mentor ("where do I look?"), ATT&CK
+mapping, explain-an-artifact, importable IOC and timeline extraction, report drafting from case facts only, a
+devil's-advocate peer review, a tool helper, and general Q&A. It can also read screenshots through the model's
+vision projector.
+
+<Callout type="warn" title="lesson learned">
+The first AI summary I ran on a real case came back **empty**. The cause: my token estimate assumed English
+prose, about 4 characters per token. Forensic data, meaning paths, timestamps, hex and GUIDs, measured
+**2.3 characters per token** on Gemma 4. The prompt overflowed the context window, and the model's reasoning
+ate the rest of the reply budget. Fixing the estimate and splitting big inputs into hierarchical merges solved
+it. Even then, the summary invented a sub-technique (`T1219.002`), and the verifier caught it. That's exactly
+why the verifier exists.
+</Callout>
+
+## Will it run on this machine?
+
+Because it's meant to live on a USB stick, it has to cope with whatever machine it's plugged into. Before the AI
+loads, the start dialog checks the machine: free RAM, which GPU it would use, the CPU, and the drive it's
+running from, including its file system and actual read speed. For each model it says whether it fits and
+roughly how long loading will take. If the big model won't fit, it pre-selects the small one.
+
+<Figure src="/images/posts/robo-iris/start-ai-check.jpg" alt="Start the local AI dialog showing memory, GPU, CPU and drive speed, with Gemma 4 26B and Gemma 4 E4B both marked as fitting" caption="the machine check before the AI starts" wide />
+
+The small model is **Gemma 4 E4B** (about 5 GB). It's for laptops: it needs about 8 GB of RAM instead of about 20.
+Some numbers from my desktop (Ryzen 9 5900X, RTX 3090):
+
+| | Load | Reading input | Writing the answer |
+|---|---|---|---|
+| Gemma 4 26B, CPU only | 65–105 s | ~63 tokens/s | ~8 tokens/s |
+| Gemma 4 26B, GPU | ~80–95 s from disk | ~2,900 tokens/s | ~70 tokens/s |
+| Gemma 4 E4B, CPU only | ~5 s | ~206 tokens/s | ~12 tokens/s |
+
+The same check runs from a terminal as `robo-iris.exe cli check`, which is handy before you even open the app
+on an unfamiliar box.
+
+## Tools, triage and reports
+
+The **Tools** section is organised by "I want to…" tasks: capture memory, hunt event logs, prove a program ran,
+find persistence. Each task recommends tools in order, with exact commands. The bundled tools (Eric Zimmerman's
+suite, Hayabusa, Chainsaw, Volatility 3, Velociraptor, YARA, capa and more) are downloaded from official
+releases, pinned, hash-checked at build time, and **re-hashed before every run**. The run dialog shows the exact
+command line, and it never goes through a shell.
+
+<Figure src="/images/posts/robo-iris/tool-hayabusa.jpg" alt="Hayabusa cheat sheet page with run buttons and copyable commands" caption="every tool gets a cheat sheet; bundled ones get ▶ run buttons" wide />
+
+There's also a **one-click triage pipeline**. Point it at a KAPE or Velociraptor collection and/or a memory
+image, and it hashes and registers the evidence, runs a disk branch and a memory branch side by side, and keeps
+only what matters. For example, from `$MFT` it takes executables in user-writable folders plus timestomp flags,
+not millions of rows. That all lands in the case. An optional AI first pass then writes a draft note to review.
+
+When it's time to write it up, the **Report** tab has a readiness checklist and one-click exports: PDF, an
+editable Word document with real headings, an Excel workbook with one sheet per section, and HTML. All of them
+are generated by dependency-free writers I built for the project. Excel cells are always written as text, so a
+malicious value from the evidence like `=cmd|...` can't execute when someone opens the workbook.
+
+<Figure src="/images/posts/robo-iris/report-tab.jpg" alt="Report tab with section checkboxes, export buttons and a readiness checklist" caption="report builder with a readiness checklist" wide />
+
+<Figure src="/images/posts/robo-iris/report-timeline.jpg" alt="HTML report section 4, Timeline of events, with the visual timeline and an event table" caption="the same timeline chart lands in the report" />
+
+## Fun stuff
+
+It has five dark themes and four layouts: a sidebar, a top bar, an icon rail, and a tmux-style terminal layout
+(below). There are also two easter eggs, which I'll leave you to find.
+
+<Figure src="/images/posts/robo-iris/terminal-layout.jpg" alt="robo-iris in the terminal layout with a tmux-style status bar along the bottom" caption="the tmux-style layout, because of course" wide />
+
+## What I learned
+
+- **Local AI is a privacy win, but it needs guardrails.** The verification layer turned "the AI said so" into
+  "the AI said so, and here's which claims checked out."
+- **Forensic data breaks assumptions.** Token counts, JSON escaping of Windows paths (`C:\ProgramData\upd.dll`
+  contains `\u`), and formula injection in CSV and Excel exports were all things I only found by testing with
+  real-looking data.
+- **Portable means humble.** It has to work on whatever machine it's plugged into, which is why the machine
+  check exists, and why there's a small model.
+
+Next on the list: leaving fewer traces on the host when it runs from USB, a workspace backup and sync button,
+and an integrity manifest so I can prove the toolkit on the stick hasn't been tampered with.
+
+<Callout type="tip" title="if you're starting out in DFIR">
+You don't need a big platform to practise. Pick a public dataset, work it in whatever tool you like, and force
+yourself to write findings as **observation → interpretation → confidence**. That habit made my notes ten
+times more useful.
+</Callout>
