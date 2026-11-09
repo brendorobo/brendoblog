@@ -13,8 +13,8 @@ import Figure from '../../components/mdx/Figure.astro';
 custody, and one-click reports in PDF, Word, Excel and HTML. It has a **local AI analyst built in**: a Gemma 4
 model running on llama.cpp, entirely on the machine, with no internet and no account. The part I'm proudest of
 isn't the AI, though. It's the **harness around it**, which numbers every log line, decodes Base64 itself, and
-mechanically checks every citation and ATT&CK ID the model gives back. The whole thing is one folder: a 9 MB exe
-plus the engine, models and tools. It runs from a USB stick.
+mechanically checks every citation and ATT&CK ID the model gives back. The whole thing is one folder: the app
+plus the engine, models and tools. It runs from a USB stick and verifies its own files every time it starts.
 </Callout>
 
 In my [last AI post](/blog/local-llm) I talked about running models locally for privacy. This is where that
@@ -127,6 +127,50 @@ Some numbers from my desktop (Ryzen 9 5900X, RTX 3090):
 The same check runs from a terminal as `robo-iris.exe cli check`, which is handy before you even open the app
 on an unfamiliar box.
 
+## Hardening it for the USB stick
+
+Once robo-iris lived on a stick, a new set of questions came up. What does it leave behind on the machines I
+plug it into? How do I keep the copy on the stick and the copy on my PC from drifting apart? And how would I
+prove the toolkit hadn't been tampered with if a report were ever challenged? So I did a hardening pass.
+
+**Fewer traces on the host.** The first build was a single-file exe, which quietly unpacks itself into
+`%TEMP%` on every launch, and the app window kept its browser profile in `%LOCALAPPDATA%`. On a machine under
+investigation, that's contamination you'd have to explain. Now:
+
+- The app is a one-folder build, so nothing gets unpacked into `%TEMP%`.
+- The window profile lives on the stick, with crash reporting switched off.
+- The bundled tools have their temp and app-data folders pointed into the workspace, so things like
+  Volatility's symbol cache stay on the stick too.
+
+What's left is what Windows records for *any* program that runs: Prefetch, Amcache, UserAssist and USB device
+history. The README now lists those, so they can go straight into the case notes.
+
+**Workspace backup and restore.** One button zips the whole data folder (cases, reports, figures, tool output)
+with a SHA-256 next to it. The database is copied with SQLite's online backup, so it's consistent even while
+the app is running. A restore checks the zip's hash and every file inside it *before* anything changes. Then
+it swaps the data in the next time the app starts, and keeps the old folder instead of deleting it.
+
+**An integrity manifest.** The build writes the SHA-256 of every shipped file (11,666 of them, about 25 GB
+including the models) to `integrity-manifest.json`:
+
+- Every launch runs a quick check in the background. It takes about 13 seconds and only size-checks the big
+  model files.
+- A full check hashes everything in about 40 seconds on my NVMe drive, and around 100 seconds while the app is
+  running.
+- Changed or missing files fail the check. So does any new DLL sitting where Windows would load it, next to the
+  exe or in the engine folder. The manifest's own hash is a fingerprint I keep off the stick: if someone changes
+  files and regenerates the manifest, the fingerprint changes.
+
+<Figure src="/images/posts/robo-iris/backup-integrity.jpg" alt="robo-iris Settings showing the Workspace backup panel with a saved zip and its SHA-256, and the Toolkit integrity panel showing all 11666 files verified and the manifest fingerprint" caption="workspace backup and toolkit integrity, side by side in Settings (demo data, shown as if the stick were E:)" wide />
+
+There were two smaller fixes too:
+
+- The README now explains the antivirus friction you get on other machines: the unsigned exe trips
+  SmartScreen, and Defender likes to quarantine memory-capture tools. If a tool gets quarantined, robo-iris
+  refuses to run it, because it fails its hash check.
+- The AI's reply budget doubled to 8,192 tokens, because whole-case summaries were getting cut off partway
+  through.
+
 ## Tools, triage and reports
 
 The **Tools** section is organized by "I want to…" tasks: capture memory, hunt event logs, prove a program ran,
@@ -167,9 +211,8 @@ It has five dark themes and four layouts: a sidebar, a top bar, an icon rail, an
   real-looking data.
 - **Portable means humble.** It has to work on whatever machine it's plugged into, which is why the machine
   check exists, and why there's a small model.
-
-Next on the list: leaving fewer traces on the host when it runs from USB, a workspace backup and sync button,
-and an integrity manifest so I can prove the toolkit on the stick hasn't been tampered with.
+- **Make the tool accountable too.** I already held the AI to account; the hardening pass did the same for
+  the toolkit, with its own hashes, a record of what it leaves on a host, and backups I can verify.
 
 <Callout type="tip" title="if you're starting out in DFIR">
 You don't need a big platform to practice. Pick a public dataset, work it in whatever tool you like, and force
