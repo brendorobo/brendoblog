@@ -28,8 +28,9 @@ const { src, alt, caption, wide = false } = Astro.props;
 </script>
 
 <style>
+  /* figures (wide or not) stay inside the text column so they line up with the paragraphs and never
+     run under the table of contents; click an image to see it full size */
   .fig { margin: 1.8rem 0; }
-  @media (min-width: 900px) { .fig.wide { margin-left: clamp(-8rem, -8vw, 0rem); margin-right: clamp(-8rem, -8vw, 0rem); } }
   .zoom { all: unset; cursor: zoom-in; display: block; }
   .zoom:focus-visible { outline: 2px solid var(--accent); outline-offset: 4px; border-radius: var(--radius); }
   img { display: block; width: 100%; border-radius: var(--radius); border: 1px solid var(--line); }
