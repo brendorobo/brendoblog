@@ -30,7 +30,8 @@ its own.
 
 At its core it's a case management workbench, with the things I reach for on every investigation:
 
-- **Cases and alerts**, with a triage queue that can escalate an alert into a case.
+- **Cases and an Inbox**, where evidence and anything suspicious land before there's a case (more on that
+  [below](#the-inbox-where-cases-start)).
 - **A timeline** of UTC events with host, source, ATT&CK technique, evidence reference and a ★ key-event flag.
 - **Findings** that force you to separate *observation* (what the evidence shows) from *interpretation* (what
   you think it means), with bounded confidence.
@@ -194,6 +195,44 @@ malicious value from the evidence like `=cmd|...` can't execute when someone ope
 <Figure src="/images/posts/robo-iris/report-tab.jpg" alt="Report tab with section checkboxes, export buttons and a readiness checklist" caption="report builder with a readiness checklist" wide />
 
 <Figure src="/images/posts/robo-iris/report-timeline.jpg" alt="HTML report section 4, Timeline of events, with the visual timeline and an event table" caption="the same timeline chart lands in the report" />
+
+## The Inbox: where cases start
+
+robo-iris used to have an **Alerts** page, copied from how DFIR-IRIS works in a SOC, where a SIEM pushes
+alerts in. On an offline workbench, though, nothing feeds it, and I wasn't going to type alerts in by hand.
+That page sat at zero. So I replaced it with the place my work actually starts: an **Inbox**.
+
+**Paste & analyze.** I paste in whatever I'm looking at: a command line from an EDR alert, a Base64 blob, a
+phishing email's headers, a list of hashes, a few log lines. robo-iris then:
+
+- **decodes it exactly.** That covers PowerShell `-EncodedCommand`, Base64 and URL-encoding, two layers deep.
+- **pulls out the indicators,** and marks the ones that only show up *after* decoding.
+- **flags about 30 living-off-the-land and tradecraft patterns,** each with its ATT&CK ID. Examples: an encoded
+  PowerShell download cradle, an LSASS dump through `comsvcs.dll`, shadow copies being deleted, `certutil`
+  used as a downloader.
+- **links the matching entries** in the offline knowledge base.
+
+None of this is AI; it's decoding and pattern matching, so it's fast and it never makes anything up. If I
+want the AI's take, one button hands it the text *plus* the exact decoded content.
+
+<Figure src="/images/posts/robo-iris/inbox-analyze.jpg" alt="robo-iris Inbox with a pasted PowerShell command, showing three tradecraft flags, the decoded download cradle and the URL it fetches" caption="an encoded PowerShell one-liner: three tradecraft flags, the decoded script, and a URL that's only visible after decoding (demo data)" wide />
+
+Email headers get their own treatment. The Inbox reads the hops oldest-first, then shows SPF, DKIM and DMARC
+results, and spells out the classic red flags: a Return-Path domain that doesn't match the sender, or replies
+going to a different domain than the email came from.
+
+<Figure src="/images/posts/robo-iris/inbox-email.jpg" alt="Email header analysis showing SPF fail, DKIM none and DMARC fail, Return-Path and Reply-To mismatches, the hop path and extracted indicators" caption="a phishing email's headers, with the red flags spelled out in plain English" wide />
+
+**Drop evidence.** Files dropped in (up to 140 MB) are copied into the workspace and hashed. Bigger things,
+like a KAPE folder or a memory image, are registered by path instead: they aren't copied, and big files are
+hashed in the background. robo-iris then works out what each item is, such as Hayabusa output, an event log,
+an email, a screenshot, a memory image, a triage collection or an executable, and suggests a next step.
+
+**Send to case** turns an item into an evidence record, with its MD5, SHA-1 and SHA-256 and a "received"
+chain-of-custody entry in my name. Then it offers the next step: *import 3 events* for tool output, *run
+triage* (pre-filled with the path) for a collection, or *add as screenshot* for an image.
+
+<Figure src="/images/posts/robo-iris/inbox-items.jpg" alt="Inbox list with a screenshot and an email waiting, and a Hayabusa CSV already sent to case IR-2026-001 as evidence E-002 with an import button" caption="items waiting in the Inbox, and one already sent to a case as evidence, with its next step" wide />
 
 ## Fun stuff
 
